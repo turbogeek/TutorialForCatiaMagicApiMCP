@@ -14,6 +14,7 @@ const fixtureExamples = path.join(
   "examples-mock",
 );
 const fixtureGuide = path.join(projectRoot, "tests", "fixtures", "guide-mock");
+const fixtureJavadoc = path.join(projectRoot, "tests", "fixtures", "javadoc-mock");
 
 interface JsonRpcMessage {
   jsonrpc: "2.0";
@@ -86,6 +87,7 @@ describe("MCP server (stdio)", () => {
         ...process.env,
         CAMEO_EXAMPLES_PATH: fixtureExamples,
         CAMEO_GUIDE_PATH: fixtureGuide,
+        CAMEO_JAVADOC_PATH: fixtureJavadoc,
       },
     }) as ChildProcessWithoutNullStreams;
     proc.stderr.on("data", (d) => {
@@ -226,6 +228,41 @@ describe("MCP server (stdio)", () => {
     expect(page?.title).toBe("Session management");
     expect(page?.text).toContain("SessionManager");
     expect((page?.codeBlocks ?? []).length).toBeGreaterThan(0);
+  });
+
+  it("javadoc_list_packages returns the fixture package list", async () => {
+    const resp = await client.request("tools/call", {
+      name: "javadoc_list_packages",
+      arguments: { prefix: "com.nomagic.magicdraw.openapi" },
+    });
+    const result = resp.result as {
+      structuredContent?: { packages: string[] };
+    };
+    expect(result.structuredContent?.packages).toContain(
+      "com.nomagic.magicdraw.openapi.uml",
+    );
+  });
+
+  it("javadoc_get_class returns structured methods for SessionManager", async () => {
+    const resp = await client.request("tools/call", {
+      name: "javadoc_get_class",
+      arguments: {
+        fqn: "com.nomagic.magicdraw.openapi.uml.SessionManager",
+      },
+    });
+    const result = resp.result as {
+      structuredContent?: {
+        class?: {
+          simpleName?: string;
+          methods?: Array<{ name: string; deprecated: boolean }>;
+        };
+      };
+    };
+    const klass = result.structuredContent?.class;
+    expect(klass?.simpleName).toBe("SessionManager");
+    const names = (klass?.methods ?? []).map((m) => m.name);
+    expect(names).toContain("createSession");
+    expect(names).toContain("closeSession");
   });
 
   it("guide_search ranks Session management #1 for 'SessionManager'", async () => {

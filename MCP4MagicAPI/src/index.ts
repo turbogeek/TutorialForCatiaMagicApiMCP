@@ -33,6 +33,12 @@ import {
   toolGuideReadPage,
 } from "./tools/guide.js";
 import { GuideSearchInput, toolGuideSearch } from "./tools/guideSearch.js";
+import {
+  JavadocListPackagesInput,
+  JavadocGetClassInput,
+  toolJavadocListPackages,
+  toolJavadocGetClass,
+} from "./tools/javadoc.js";
 
 async function main(): Promise<void> {
   const paths = loadConfig();
@@ -230,6 +236,40 @@ async function main(): Promise<void> {
       return {
         content: [{ type: "text", text: JSON.stringify(hits, null, 2) }],
         structuredContent: { hits },
+      };
+    },
+  );
+
+  server.registerTool(
+    "javadoc_list_packages",
+    {
+      description:
+        "List every Java package shipped in the Cameo Open API Javadoc. Use prefix to filter.",
+      inputSchema: JavadocListPackagesInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async (args) => {
+      const pkgs = await toolJavadocListPackages(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(pkgs, null, 2) }],
+        structuredContent: { packages: pkgs },
+      };
+    },
+  );
+
+  server.registerTool(
+    "javadoc_get_class",
+    {
+      description:
+        "Return structured Javadoc for one class by fully-qualified name — signature, inheritance, description, methods (with deprecation flags), and fields.",
+      inputSchema: JavadocGetClassInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async (args) => {
+      const klass = await toolJavadocGetClass(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(klass, null, 2) }],
+        structuredContent: { class: klass },
       };
     },
   );
