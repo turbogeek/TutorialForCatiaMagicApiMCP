@@ -61,6 +61,14 @@ As I continued, I remembered that the system often forgets that, when using Groo
 ```
 I have created a scripts directory with a logger tool, "E:\_Documents\git\TutorialForCatiaMagicApiMCP\scripts\SysMLv2Logger.groovy", and an example, "E:\_Documents\git\TutorialForCatiaMagicApiMCP\scripts\RequirementSatisfyMatrixGraphics.groovy", adding snippets on the creation, setup, and usage of this console logger. Also note the sequence used in the setup for loading a script, which is the best method when in the Cameo environment. Also, forbid the use of Fast Strings in Groovy, which are generally incompatible with the strings used in the Cameo api. Then proceed with your plan.
 ```
+## Starting the MCP locally.
+Here are the instructions that the AI gave for starting the server:
+```
+cd MCP4MagicAPI
+npm run build
+claude mcp add MCP4MagicAPI node E:\_Documents\git\TutorialForCatiaMagicApiMCP\MCP4MagicAPI\build\index.js
+```
+
 ## Testing
 Next it is time for us to test the MCP. Here is the prompt I wrote for this task:
 ```
