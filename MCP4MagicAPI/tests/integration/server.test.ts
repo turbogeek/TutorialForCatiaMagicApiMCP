@@ -230,6 +230,20 @@ describe("MCP server (stdio)", () => {
     expect((page?.codeBlocks ?? []).length).toBeGreaterThan(0);
   });
 
+  it("javadoc_search ranks exact class match first", async () => {
+    const resp = await client.request("tools/call", {
+      name: "javadoc_search",
+      arguments: { query: "SessionManager", kind: "class", limit: 3 },
+    });
+    const result = resp.result as {
+      structuredContent?: { hits: Array<{ kind: string; simpleName: string }> };
+    };
+    const hits = result.structuredContent?.hits ?? [];
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits[0].simpleName).toBe("SessionManager");
+    expect(hits[0].kind).toBe("class");
+  });
+
   it("javadoc_list_packages returns the fixture package list", async () => {
     const resp = await client.request("tools/call", {
       name: "javadoc_list_packages",

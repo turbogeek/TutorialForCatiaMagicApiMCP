@@ -39,6 +39,10 @@ import {
   toolJavadocListPackages,
   toolJavadocGetClass,
 } from "./tools/javadoc.js";
+import {
+  JavadocSearchInput,
+  toolJavadocSearch,
+} from "./tools/javadocSearch.js";
 
 async function main(): Promise<void> {
   const paths = loadConfig();
@@ -270,6 +274,23 @@ async function main(): Promise<void> {
       return {
         content: [{ type: "text", text: JSON.stringify(klass, null, 2) }],
         structuredContent: { class: klass },
+      };
+    },
+  );
+
+  server.registerTool(
+    "javadoc_search",
+    {
+      description:
+        "Fuzzy search across the Cameo Javadoc for classes, methods, fields, or packages. Reuses the pre-built type/member/package-search-index.js files that the Javadoc tool ships — equivalent to the doc-site search box.",
+      inputSchema: JavadocSearchInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async (args) => {
+      const hits = await toolJavadocSearch(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(hits, null, 2) }],
+        structuredContent: { hits },
       };
     },
   );

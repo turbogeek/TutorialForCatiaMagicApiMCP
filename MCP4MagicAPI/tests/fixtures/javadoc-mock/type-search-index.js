@@ -1,0 +1,1 @@
+typeSearchIndex = [{"p":"com.nomagic.magicdraw.openapi.uml","l":"SessionManager"},{"p":"com.nomagic.magicdraw.openapi.uml","l":"ModelElementsManager"},{"p":"com.nomagic.magicdraw.uml","l":"Finder"},{"p":"com.nomagic.magicdraw.uml","l":"Finder.ByQualifiedName"},{"p":"com.nomagic.magicdraw.core","l":"Application"},{"p":"com.nomagic.magicdraw.core","l":"Project"}]
