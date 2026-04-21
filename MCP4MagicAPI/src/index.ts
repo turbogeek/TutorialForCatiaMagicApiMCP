@@ -43,6 +43,7 @@ import {
   JavadocSearchInput,
   toolJavadocSearch,
 } from "./tools/javadocSearch.js";
+import { ValidateScriptInput, toolValidateScript } from "./tools/validate.js";
 
 async function main(): Promise<void> {
   const paths = loadConfig();
@@ -291,6 +292,23 @@ async function main(): Promise<void> {
       return {
         content: [{ type: "text", text: JSON.stringify(hits, null, 2) }],
         structuredContent: { hits },
+      };
+    },
+  );
+
+  server.registerTool(
+    "validate_script_syntax",
+    {
+      description:
+        "Parse-check a Groovy or Java snippet via groovyc or javac. Returns {ok, compiler, issues[], lintWarnings[]}. Groovy results include a GString lint that warns when interpolated strings appear near Cameo API call sites.",
+      inputSchema: ValidateScriptInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async (args) => {
+      const result = await toolValidateScript(args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        structuredContent: { result },
       };
     },
   );

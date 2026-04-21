@@ -230,6 +230,21 @@ describe("MCP server (stdio)", () => {
     expect((page?.codeBlocks ?? []).length).toBeGreaterThan(0);
   });
 
+  it("validate_script_syntax accepts a valid Groovy println", async () => {
+    const resp = await client.request("tools/call", {
+      name: "validate_script_syntax",
+      arguments: { language: "groovy", code: "println 'hello'\n" },
+    });
+    const result = resp.result as {
+      structuredContent?: { result: { ok: boolean; compiler: string | null } };
+    };
+    const r = result.structuredContent?.result;
+    // If no compiler is installed, skip — the validator returns compiler=null.
+    if (r && r.compiler != null) {
+      expect(r.ok).toBe(true);
+    }
+  }, 60_000);
+
   it("javadoc_search ranks exact class match first", async () => {
     const resp = await client.request("tools/call", {
       name: "javadoc_search",
