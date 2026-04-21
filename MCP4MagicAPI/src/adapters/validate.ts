@@ -34,10 +34,24 @@ async function exec(
   opts: { cwd?: string; timeoutMs?: number } = {},
 ): Promise<ExecResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, {
+    // On Windows, groovyc/javac are often shipped as .bat/.cmd wrappers that
+    // the OS can only launch via the shell. shell:true also lets us resolve
+    // bare names like 'groovyc' through PATH in the same way the terminal
+    // does. Args here come from the MCP tool (language + temp file path),
+    // not arbitrary user text, so shell-injection surface is minimal.
+    const useShell = process.platform === "win32";
+    // When shell:true, Node concatenates the args with spaces before handing
+    // the whole string to the shell — so paths with whitespace split into
+    // multiple tokens. Quote any arg that contains a space on Windows.
+    const safeArgs = useShell
+      ? args.map((a) => (/\s/.test(a) && !a.startsWith('"') ? `"${a}"` : a))
+      : args;
+    const safeCmd =
+      useShell && /\s/.test(cmd) && !cmd.startsWith('"') ? `"${cmd}"` : cmd;
+    const child = spawn(safeCmd, safeArgs, {
       cwd: opts.cwd,
       stdio: ["ignore", "pipe", "pipe"],
-      shell: false,
+      shell: useShell,
     });
     let stdout = "";
     let stderr = "";
@@ -59,9 +73,16 @@ async function detectCompiler(
 ): Promise<string | null> {
   try {
     const r = await exec(cmd, versionArgs, { timeoutMs: 5_000 });
+    // A non-zero exit from --version / -version means the binary didn't even
+    // launch correctly (on Windows with shell:true this is how a missing .bat
+    // surfaces — cmd.exe prints "not recognized" to stderr and exits != 0).
+    if (r.code !== 0) return null;
     const raw = (r.stdout + " " + r.stderr).trim();
     if (raw.length === 0) return null;
-    return raw.split(/\r?\n/)[0].trim();
+    const firstLine = raw.split(/\r?\n/)[0].trim();
+    // Must look like a real compiler banner, not a shell error.
+    if (!/groovy|javac|java(?:\s+version)?/i.test(firstLine)) return null;
+    return firstLine;
   } catch {
     return null;
   }
@@ -96,20 +117,36 @@ export function lintGroovyForGStrings(src: string): ValidationIssue[] {
 
 function parseGroovycOutput(out: string): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
-  // groovyc error line format: "<file>: <line>: <message>\n @ line N, column M."
-  // Also: "<file>:<line>: error: <message>"
+  // groovyc error formats (file path may contain a drive-letter colon on
+  // Windows — match ":<line>:" anywhere in the line rather than consuming
+  // the whole path):
+  //   "<file>: <line>: <message>"
+  //   follow-up "@ line N, column M."  (refines position of the previous error)
+  //   "<file>:<line>: error: <message>"  (alt)
   const lines = out.split(/\r?\n/);
   let pending: ValidationIssue | null = null;
+  const primary = /\.groovy\s*:\s*(\d+)\s*:\s*(.+)$/;
+  const altErr = /:\s*(\d+)\s*:\s*(error|warning)\s*:\s*(.+)$/i;
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) continue;
-    let m = line.match(/^[^:]+:\s*(\d+):\s*(.+)$/);
+    let m = line.match(primary);
     if (m) {
       if (pending) issues.push(pending);
       pending = {
         line: Number(m[1]),
         severity: /warning/i.test(m[2]) ? "warning" : "error",
         message: m[2].trim(),
+      };
+      continue;
+    }
+    m = line.match(altErr);
+    if (m) {
+      if (pending) issues.push(pending);
+      pending = {
+        line: Number(m[1]),
+        severity: /warning/i.test(m[2]) ? "warning" : "error",
+        message: m[3].trim(),
       };
       continue;
     }
@@ -148,6 +185,11 @@ export interface ValidateOptions {
   language: ValidateLanguage;
   code: string;
   compilerOverride?: string; // path to groovyc/javac
+  classpath?: string; // colon/semicolon-separated classpath for resolving imports
+}
+
+function cpSep(): string {
+  return process.platform === "win32" ? ";" : ":";
 }
 
 export async function validateScript(
@@ -179,11 +221,15 @@ export async function validateScript(
           lintWarnings,
         };
       }
-      const r = await exec(
-        cmd,
-        ["-d", tempDir, "--encoding=UTF-8", filePath],
-        { cwd: tempDir, timeoutMs: 60_000 },
-      );
+      const groovyArgs = ["-d", tempDir, "--encoding=UTF-8"];
+      if (opts.classpath && opts.classpath.length > 0) {
+        groovyArgs.push("-cp", opts.classpath);
+      }
+      groovyArgs.push(filePath);
+      const r = await exec(cmd, groovyArgs, {
+        cwd: tempDir,
+        timeoutMs: 120_000,
+      });
       const combined = r.stdout + "\n" + r.stderr;
       const issues = parseGroovycOutput(combined);
       return {
@@ -214,11 +260,12 @@ export async function validateScript(
           lintWarnings: [],
         };
       }
-      const r = await exec(
-        cmd,
-        ["-proc:none", "-d", tempDir, "-implicit:none", filePath],
-        { cwd: tempDir, timeoutMs: 60_000 },
-      );
+      const javaArgs = ["-proc:none", "-d", tempDir, "-implicit:none"];
+      if (opts.classpath && opts.classpath.length > 0) {
+        javaArgs.push("-cp", opts.classpath);
+      }
+      javaArgs.push(filePath);
+      const r = await exec(cmd, javaArgs, { cwd: tempDir, timeoutMs: 120_000 });
       const issues = parseJavacOutput(r.stdout + "\n" + r.stderr);
       return {
         ok: r.code === 0 && issues.every((i) => i.severity !== "error"),

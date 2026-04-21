@@ -77,5 +77,26 @@
     "sourceExamples": [
       "scripts/RequirementSatisfyMatrixGraphics.groovy:27-274"
     ]
+  },
+  "logger-dedicated-file": {
+    "name": "logger-dedicated-file",
+    "language": "groovy",
+    "description": "Use SysMLv2Logger with a dedicated run-scoped log file that is CLEARED at script start. The file contains ONLY this run's output, so an AI/agent tailing the file sees this script's lifecycle end-to-end. Pair with 'script-load-groovy'.",
+    "body": "// The File is cleared on the first call to the logger's constructor, so\n// the file always contains only the CURRENT run's output. Put the file\n// under the project's logs/ dir so it is not lost across Cameo restarts.\nimport java.io.File\n\nFile runLog = new File(\n    'E:\\\\_Documents\\\\git\\\\TutorialForCatiaMagicApiMCP\\\\logs',\n    'MyScript.log'\n)\ndef logger = LoggerClass.newInstance('MyScript', runLog)\nlogger.info('=== MyScript run started ===')\ntry {\n    // ... work ...\n    logger.info('Done.')\n} catch (Throwable t) {\n    logger.error('MyScript failed', t)   // appends to runLog with stack trace\n}\n",
+    "sourceExamples": [
+      "scripts/SysMLv2Logger.groovy",
+      "scripts/SysMLv1BlockBuilder.groovy"
+    ]
+  },
+  "cameo-batch-runner": {
+    "name": "cameo-batch-runner",
+    "language": "java",
+    "description": "Skeleton for running a Cameo task in batch mode by extending com.nomagic.magicdraw.commandline.ProjectCommandLine. This is THE way to get real classpath-bound script validation — a Cameo install launches, runs your execute(), and exits with your return code. Deploy as a plugin JAR in plugins/, launch via 'java -cp lib/classpath.jar your.FQN' from the install root. See the imagegenerator example and guide page 'Running programs in batch mode' (254437299).",
+    "body": "package com.example;\n\nimport com.nomagic.magicdraw.commandline.ProjectCommandLine;\nimport com.nomagic.magicdraw.core.Project;\nimport com.nomagic.magicdraw.utils.MDLog;\n\nimport java.util.Properties;\n\npublic class MyBatchRunner extends ProjectCommandLine {\n\n    public static void main(String[] args) throws InstantiationException {\n        new MyBatchRunner().launch(args);\n    }\n\n    @Override\n    protected byte execute(Properties props, Project project) {\n        if (project == null) {\n            printToCommandLineConsole(\"Project was not loaded.\");\n            return -1;\n        }\n        try {\n            // ... do the work; NEVER call System.exit ...\n            return 0;\n        } catch (Throwable t) {\n            MDLog.getGeneralLog().error(t.getMessage(), t);\n            printToCommandLineConsole(\"FAILED: \" + t.getMessage());\n            return -1;\n        }\n    }\n\n    @Override\n    protected void parseArguments(String[] args) {\n        // Parse your CLI args here; set fields as needed.\n    }\n}\n",
+    "sourceExamples": [
+      "examples/imagegenerator/.../ExportDiagramImages.java",
+      "guide: Running-programs-in-batch-mode.254437299.html",
+      "guide: Implementing-command-line-launchers.254437340.html"
+    ]
   }
 }

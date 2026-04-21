@@ -37,7 +37,7 @@ describe("snippet store", () => {
 
   it("lists all seeded snippets", async () => {
     const all = await listSnippets(testPaths, {});
-    expect(all.length).toBeGreaterThanOrEqual(9);
+    expect(all.length).toBeGreaterThanOrEqual(11);
     const names = all.map((s) => s.name).sort();
     expect(names).toContain("session-wrap");
     expect(names).toContain("gui-log-error");
@@ -48,6 +48,24 @@ describe("snippet store", () => {
     expect(names).toContain("console-logger-class");
     expect(names).toContain("script-load-groovy");
     expect(names).toContain("logger-usage");
+    expect(names).toContain("logger-dedicated-file");
+    expect(names).toContain("cameo-batch-runner");
+  });
+
+  it("logger-dedicated-file snippet clears on construction and writes into a File", async () => {
+    const s = await getSnippet(testPaths, { name: "logger-dedicated-file" });
+    expect(s.body).toContain("new File(");
+    expect(s.body).toContain("LoggerClass.newInstance('MyScript', runLog)");
+    expect(s.body.toLowerCase()).toMatch(/cleared/);
+  });
+
+  it("cameo-batch-runner snippet uses ProjectCommandLine and returns a byte", async () => {
+    const s = await getSnippet(testPaths, { name: "cameo-batch-runner" });
+    expect(s.language).toBe("java");
+    expect(s.body).toContain("extends ProjectCommandLine");
+    expect(s.body).toContain("launch(args)");
+    // No CALL to System.exit — the comment warning about it is fine.
+    expect(s.body).not.toMatch(/System\.exit\s*\(/);
   });
 
   it("script-load-groovy uses the Cameo parent classloader", async () => {
@@ -95,7 +113,10 @@ describe("snippet store", () => {
     const groovy = await listSnippets(testPaths, { language: "groovy" });
     expect(groovy.every((s) => s.language === "groovy")).toBe(true);
     const java = await listSnippets(testPaths, { language: "java" });
-    expect(java).toHaveLength(0);
+    expect(java.every((s) => s.language === "java")).toBe(true);
+    expect(java.some((s) => s.name === "cameo-batch-runner")).toBe(true);
+    const klingon = await listSnippets(testPaths, { language: "klingon" });
+    expect(klingon).toHaveLength(0);
   });
 
   it("throws a helpful error for an unknown snippet name", async () => {

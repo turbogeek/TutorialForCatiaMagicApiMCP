@@ -172,5 +172,40 @@
     ],
     "snippet": "logger-usage",
     "source": "scripts/SysMLv2Logger.groovy"
+  },
+  "dedicated-log-file": {
+    "topic": "dedicated-log-file",
+    "summary": "For scripts launched interactively inside Cameo (not via batch CLI), write to a dedicated log file that is CLEARED at script start. The file contains only THIS run's output, so an AI agent or automation tailing it sees the current lifecycle end-to-end.",
+    "do": [
+      "Instantiate SysMLv2Logger with the (name, File) overload: def logger = LoggerClass.newInstance('MyScript', new File(logsDir, 'MyScript.log')).",
+      "Put the file under the project's logs/ directory (per CLAUDE.md — that's where Claude looks).",
+      "Include an opening marker line: logger.info('=== MyScript run started ===') so tails start with a clean anchor.",
+      "Always pass the Throwable to logger.error(msg, t) — the stack trace is what the agent reads to root-cause."
+    ],
+    "dont": [
+      "Don't append to a shared log file across runs — mixed output makes it impossible to know which lines came from this run.",
+      "Don't System.exit or Runtime.halt on error — let the JVM keep running and let the file buffer flush.",
+      "Don't put the log file inside the Cameo install dir — those trees are often read-only and get wiped by upgrades."
+    ],
+    "snippet": "logger-dedicated-file",
+    "source": "user requirement; scripts/SysMLv2Logger.groovy"
+  },
+  "batch-runner": {
+    "topic": "batch-runner",
+    "summary": "For the 'ultimate script testing tool', run your task in Cameo's batch mode by extending com.nomagic.magicdraw.commandline.ProjectCommandLine (or CommandLineAction for plugin-scoped tasks). Cameo launches, executes your main(), and exits — providing real classpath-bound validation.",
+    "do": [
+      "Extend ProjectCommandLine for tasks that operate on a project; implement execute(Properties, Project).",
+      "Implement CommandLineAction for tasks that rely on a plugin already loaded into the running app.",
+      "Launch from the Cameo install root: java -cp lib/classpath.jar com.example.MyRunner <args>. The bundled JRE is at bin/vm.options; use the JAVA_HOME from bin/mcse.properties.",
+      "Always return a byte exit code — 0 for success, non-zero for failure. Let the caller (CI, script, Claude) read the code.",
+      "Print to printToCommandLineConsole() for user-visible output, and MDLog.getGeneralLog() for diagnostic output — both end up in the application log.",
+      "Even in batch mode, the application requires a graphical environment (per guide 254437299). A headless VM will not work."
+    ],
+    "dont": [
+      "Don't System.exit — ProjectCommandLine.launch() handles exit for you; manual exit skips Cameo's shutdown hooks.",
+      "Don't assume the plugin classpath is available to a ProjectCommandLine — plugins are loaded lazily. Use CommandLineAction if you need plugin classes."
+    ],
+    "snippet": "cameo-batch-runner",
+    "source": "examples/imagegenerator/.../ExportDiagramImages.java; guide 254437299 (Running programs in batch mode); guide 254437340 (Implementing command line launchers); guide 254437301 (Specifying batch mode program classpath)"
   }
 }

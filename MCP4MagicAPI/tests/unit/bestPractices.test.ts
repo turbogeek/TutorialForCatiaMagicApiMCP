@@ -40,6 +40,8 @@ describe("best practices", () => {
       "association-ends",
       "tdd-loop",
       "console-logger",
+      "dedicated-log-file",
+      "batch-runner",
     ]) {
       expect(topics).toContain(required);
     }

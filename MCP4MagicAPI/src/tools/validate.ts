@@ -10,6 +10,13 @@ export const ValidateScriptInput = z.object({
     .describe(
       "Absolute path to groovyc or javac when they are not on PATH.",
     ),
+  classpath: z
+    .string()
+    .optional()
+    .describe(
+      "OS-separated classpath (';' on Windows, ':' elsewhere) for resolving imports. " +
+        "For Cameo scripts, point at the MagicDraw lib/ folder, e.g. 'E:/Magic SW/.../lib/*'.",
+    ),
 });
 
 export async function toolValidateScript(
