@@ -32,6 +32,7 @@ import {
   toolGuideListPages,
   toolGuideReadPage,
 } from "./tools/guide.js";
+import { GuideSearchInput, toolGuideSearch } from "./tools/guideSearch.js";
 
 async function main(): Promise<void> {
   const paths = loadConfig();
@@ -212,6 +213,23 @@ async function main(): Promise<void> {
       return {
         content: [{ type: "text", text: JSON.stringify(page, null, 2) }],
         structuredContent: { page },
+      };
+    },
+  );
+
+  server.registerTool(
+    "guide_search",
+    {
+      description:
+        "Full-text search across all Cameo Developer Guide pages. Ranked by TF-IDF with title and exact-phrase boosts. Builds a lazy cache at .cache/guide-index.json.",
+      inputSchema: GuideSearchInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async (args) => {
+      const hits = await toolGuideSearch(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(hits, null, 2) }],
+        structuredContent: { hits },
       };
     },
   );

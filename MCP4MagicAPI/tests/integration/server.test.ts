@@ -228,6 +228,19 @@ describe("MCP server (stdio)", () => {
     expect((page?.codeBlocks ?? []).length).toBeGreaterThan(0);
   });
 
+  it("guide_search ranks Session management #1 for 'SessionManager'", async () => {
+    const resp = await client.request("tools/call", {
+      name: "guide_search",
+      arguments: { query: "SessionManager", limit: 3 },
+    });
+    const result = resp.result as {
+      structuredContent?: { hits: Array<{ title: string; score: number }> };
+    };
+    const hits = result.structuredContent?.hits ?? [];
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits[0].title).toBe("Session management");
+  });
+
   it("exposes best_practice_lookup and returns the no-fast-strings card", async () => {
     const list = await client.request("tools/list", {});
     const tools = (list.result as { tools: Array<{ name: string }> }).tools;
