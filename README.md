@@ -10,13 +10,13 @@ First, let’s install Node.js and npm if you haven’t already. You can downloa
 https://nodejs.org/en
 
 ### Verify your Node.js installation:
-'''
+```
 node --version
 npm --version
-'''
+```
 For this tutorial, you’ll need Node.js version 16 or higher.
 ## Directory setup (where we will build the server)
-'''
+```
 REM Create a new directory for our project
 md MCP4MagicAPI
 cd MCP4MagicAPI
@@ -28,4 +28,4 @@ npm install -D @types/node typescript
 REM Create our files
 md src
 new-item src\index.ts
-'''
+```
