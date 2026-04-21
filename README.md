@@ -61,3 +61,8 @@ As I continued, I remembered that the system often forgets that, when using Groo
 ```
 I have created a scripts directory with a logger tool, "E:\_Documents\git\TutorialForCatiaMagicApiMCP\scripts\SysMLv2Logger.groovy", and an example, "E:\_Documents\git\TutorialForCatiaMagicApiMCP\scripts\RequirementSatisfyMatrixGraphics.groovy", adding snippets on the creation, setup, and usage of this console logger. Also note the sequence used in the setup for loading a script, which is the best method when in the Cameo environment. Also, forbid the use of Fast Strings in Groovy, which are generally incompatible with the strings used in the Cameo api. Then proceed with your plan.
 ```
+## Testing
+Next it is time for us to test the MCP. Here is the prompt I wrote for this task:
+```
+When you are done, let's try using the MCP to create the following Groovy script via this prompt: Create a Java Swing form to help the user create the parts of the system by iterating from the top block to its parts and subparts to create the Blocks for all the parts and the part attributes for subparts. When the user presses ok, the model is created with the top-level system block in a system package, the second level in a subsystems package, and all other Blocks in a library package called parts catalog. This is for SyMLv1.
+```
