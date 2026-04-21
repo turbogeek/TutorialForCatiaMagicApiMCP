@@ -50,5 +50,32 @@
     "description": "Read both ends of an Association. end[0] is source, end[1] is target.",
     "body": "// Associations have no slots; the real ends are in getEnd()\ndef ends = assoc.getEnd()\ndef sourceType = ends[0].getType()\ndef targetType = ends[1].getType()\n",
     "sourceExamples": []
+  },
+  "console-logger-class": {
+    "name": "console-logger-class",
+    "language": "groovy",
+    "description": "Reusable SysMLv2Logger class that routes info/debug to log4j only and mirrors warn/error to the MagicDraw GUI console. Drop into your scripts directory and load it via 'script-load-groovy'.",
+    "body": "import com.nomagic.magicdraw.core.Application\nimport com.nomagic.magicdraw.core.GUILog\nimport org.apache.log4j.Logger\nimport java.io.StringWriter\nimport java.io.PrintWriter\n\n/**\n * Robust logger for Cameo/MagicDraw Groovy scripts.\n * info/debug -> log4j only (reduces GUI console clutter)\n * warn/error -> log4j + GUI console (surface real problems)\n * STRICT RULE: never swallow exceptions — always use the (msg, Throwable) overload.\n */\nclass SysMLv2Logger {\n    private final Logger log\n    private final GUILog gl\n\n    SysMLv2Logger(Class<?> clazz) {\n        this.log = Logger.getLogger(clazz)\n        this.gl = Application.getInstance().getGUILog()\n    }\n\n    SysMLv2Logger(String name) {\n        this.log = Logger.getLogger(name)\n        this.gl = Application.getInstance().getGUILog()\n    }\n\n    void info(String message)  { log.info(message) }\n    void debug(String message) { log.debug(message) }\n\n    void warn(String message) {\n        log.warn(message)\n        if (gl != null) gl.log('[WARNING] ' + message)\n    }\n\n    void warn(String message, Throwable t) {\n        log.warn(message, t)\n        if (gl != null) gl.log('[WARNING] ' + message + '\\n' + stackTrace(t))\n        else { System.err.println('[WARNING] ' + message); t.printStackTrace(System.err) }\n    }\n\n    void error(String message) {\n        log.error(message)\n        if (gl != null) gl.log('[ERROR] ' + message)\n        else System.err.println('[ERROR] ' + message)\n    }\n\n    void error(String message, Throwable t) {\n        log.error(message, t)\n        if (gl != null) gl.log('[ERROR] ' + message + '\\n' + stackTrace(t))\n        else { System.err.println('[ERROR] ' + message); t.printStackTrace(System.err) }\n    }\n\n    private String stackTrace(Throwable t) {\n        if (t == null) return ''\n        def sw = new StringWriter()\n        t.printStackTrace(new PrintWriter(sw))\n        return sw.toString()\n    }\n}\n",
+    "sourceExamples": [
+      "scripts/SysMLv2Logger.groovy"
+    ]
+  },
+  "script-load-groovy": {
+    "name": "script-load-groovy",
+    "language": "groovy",
+    "description": "Preferred way to load a companion Groovy class from inside a script running in Cameo. Passing getClass().getClassLoader() as the parent keeps MagicDraw's classpath visible, so imports of com.nomagic.* resolve in the loaded class.",
+    "body": "// Load a companion class (e.g. SysMLv2Logger) next to the current script.\n// Use '+' concatenation for paths — avoid GStrings at Cameo API boundaries.\nString scriptDir = 'E:\\\\_Documents\\\\git\\\\TutorialForCatiaMagicApiMCP\\\\scripts'\nFile loggerFile = new File(scriptDir, 'SysMLv2Logger.groovy')\n\n// The parent classloader MUST be getClass().getClassLoader() (the Cameo one),\n// otherwise com.nomagic.* imports in the loaded class won't resolve.\ndef LoggerClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(loggerFile)\ndef logger = LoggerClass.newInstance('MyScript')\n",
+    "sourceExamples": [
+      "scripts/RequirementSatisfyMatrixGraphics.groovy:22-25"
+    ]
+  },
+  "logger-usage": {
+    "name": "logger-usage",
+    "language": "groovy",
+    "description": "Canonical usage of SysMLv2Logger in a Cameo script: load once at the top, wrap the script body in try/catch(Throwable), pass exceptions to error(msg, t) so stack traces go to both log4j and the GUI console.",
+    "body": "// Assumes SysMLv2Logger was loaded via the 'script-load-groovy' snippet.\ndef logger = LoggerClass.newInstance('MyFeatureName')\n\ntry {\n    def project = com.nomagic.magicdraw.core.Application.getInstance().getProject()\n    if (project == null) {\n        logger.error('No active MagicDraw project.')\n        return\n    }\n\n    logger.info('Starting work on: ' + project.getName())\n    // ... your work here ...\n    logger.info('Done.')\n} catch (Throwable t) {\n    // NEVER swallow. Always pass the Throwable so the stack trace is preserved.\n    logger.error('Critical failure during script execution', t)\n}\n",
+    "sourceExamples": [
+      "scripts/RequirementSatisfyMatrixGraphics.groovy:27-274"
+    ]
   }
 }

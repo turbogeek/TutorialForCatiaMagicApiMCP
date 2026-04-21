@@ -35,9 +35,9 @@ describe("snippet store", () => {
     expect(snippet.body).toContain("cancelSession");
   });
 
-  it("lists six seeded snippets", async () => {
+  it("lists all seeded snippets", async () => {
     const all = await listSnippets(testPaths, {});
-    expect(all.length).toBeGreaterThanOrEqual(6);
+    expect(all.length).toBeGreaterThanOrEqual(9);
     const names = all.map((s) => s.name).sort();
     expect(names).toContain("session-wrap");
     expect(names).toContain("gui-log-error");
@@ -45,6 +45,50 @@ describe("snippet store", () => {
     expect(names).toContain("finder-by-type");
     expect(names).toContain("headless-detect");
     expect(names).toContain("association-ends");
+    expect(names).toContain("console-logger-class");
+    expect(names).toContain("script-load-groovy");
+    expect(names).toContain("logger-usage");
+  });
+
+  it("script-load-groovy uses the Cameo parent classloader", async () => {
+    const snippet = await getSnippet(testPaths, { name: "script-load-groovy" });
+    expect(snippet.body).toContain("GroovyClassLoader(getClass().getClassLoader())");
+    expect(snippet.body).toContain("parseClass");
+  });
+
+  it("console-logger-class wires log4j and GUILog and keeps both constructors", async () => {
+    const snippet = await getSnippet(testPaths, {
+      name: "console-logger-class",
+    });
+    expect(snippet.body).toContain("import org.apache.log4j.Logger");
+    expect(snippet.body).toContain("Application.getInstance().getGUILog()");
+    expect(snippet.body).toContain("SysMLv2Logger(Class<?> clazz)");
+    expect(snippet.body).toContain("SysMLv2Logger(String name)");
+    // info/debug must NOT echo to GUI; warn/error MUST.
+    expect(snippet.body).toMatch(/void info[\s\S]*?log\.info/);
+    expect(snippet.body).toMatch(/void error[\s\S]*?gl\.log/);
+  });
+
+  it("logger-usage always passes Throwable to error() — never swallow", async () => {
+    const snippet = await getSnippet(testPaths, { name: "logger-usage" });
+    expect(snippet.body).toContain("catch (Throwable t)");
+    expect(snippet.body).toContain("logger.error");
+    expect(snippet.body).toMatch(/logger\.error\([^)]+,\s*t\)/);
+  });
+
+  it("snippets never use GString interpolation (forbidden at Cameo API boundaries)", async () => {
+    const all = await listSnippets(testPaths, { language: "groovy" });
+    for (const snippet of all) {
+      // Flag the classic failure mode: "..${expr}.." or ".. $name .."  inside double-quoted strings.
+      // We allow $ inside single-quoted strings (those are plain java.lang.String in Groovy).
+      const doubleQuotedWithInterpolation = /"[^"\n]*\$[^"\n]*"/;
+      if (doubleQuotedWithInterpolation.test(snippet.body)) {
+        throw new Error(
+          `Snippet '${snippet.name}' uses a GString (double-quoted with $). ` +
+            `Use single quotes + '+' concat or .toString() at the Cameo API boundary.`,
+        );
+      }
+    }
   });
 
   it("filters by language", async () => {
