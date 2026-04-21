@@ -16,7 +16,7 @@ npm --version
 '''
 For this tutorial, you’ll need Node.js version 16 or higher.
 ## Directory setup (where we will build the server)
-''' Windows Commands (can be copied to the shell in the host directory location
+'''
 REM Create a new directory for our project
 md MCP4MagicAPI
 cd MCP4MagicAPI
