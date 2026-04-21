@@ -1,0 +1,54 @@
+{
+  "session-wrap": {
+    "name": "session-wrap",
+    "language": "groovy",
+    "description": "Correct createSession / closeSession / cancelSession wrapping for any model mutation.",
+    "body": "import com.nomagic.magicdraw.openapi.uml.SessionManager\n\ndef sm = SessionManager.getInstance()\nsm.createSession(project, 'describe the change')\ntry {\n    // ... model mutations here ...\n    sm.closeSession(project)\n} catch (Exception e) {\n    sm.cancelSession(project)\n    throw e\n}\n",
+    "sourceExamples": [
+      "examples/refactor/src/.../FixJavaConstantNamesAction.java:49-54"
+    ]
+  },
+  "gui-log-error": {
+    "name": "gui-log-error",
+    "language": "groovy",
+    "description": "Show an error dialog and also record it to the plugin log.",
+    "body": "import com.nomagic.magicdraw.core.Application\nimport com.nomagic.magicdraw.utils.MDLog\n\ndef msg = 'Something went wrong: ' + reason\nMDLog.getGeneralLog().error(msg, e)\nApplication.getInstance().getGUILog().showError(msg)\n",
+    "sourceExamples": [
+      "examples/annotations/.../AnnotationSample.java:140"
+    ]
+  },
+  "finder-by-qname": {
+    "name": "finder-by-qname",
+    "language": "groovy",
+    "description": "Resolve an element by qualified name using Finder.",
+    "body": "import com.nomagic.magicdraw.uml.Finder\nimport com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Class as UmlClass\n\ndef element = Finder.byQualifiedName().find(project, 'Pkg::Sub::Name', UmlClass.class)\nif (element == null) {\n    // not found — handle\n}\n",
+    "sourceExamples": [
+      "examples/validationhelper/.../ValidationHelperExample.java:117"
+    ]
+  },
+  "finder-by-type": {
+    "name": "finder-by-type",
+    "language": "groovy",
+    "description": "Collect all elements of a given type beneath an owner, recursively.",
+    "body": "import com.nomagic.magicdraw.uml.Finder\nimport com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Element\n\nClass<?>[] types = new Class<?>[]{ someType.class }\nCollection<Element> hits = Finder.byTypeRecursively().find(owner, types, false)\n",
+    "sourceExamples": [
+      "examples/activitynode/.../ActivityNodeNumbering.java:34"
+    ]
+  },
+  "headless-detect": {
+    "name": "headless-detect",
+    "language": "groovy",
+    "description": "Guard GUI-only code paths when a script is launched outside the MagicDraw UI.",
+    "body": "import com.nomagic.magicdraw.core.Application\n\ndef app = Application.getInstance()\ndef isHeadless = app == null || app.getProject() == null\nif (isHeadless) {\n    // use test data / skip GUI paths\n} else {\n    // interactive code paths\n}\n",
+    "sourceExamples": [
+      "examples/commandlineplugin/.../CommandLineActionExample.java"
+    ]
+  },
+  "association-ends": {
+    "name": "association-ends",
+    "language": "groovy",
+    "description": "Read both ends of an Association. end[0] is source, end[1] is target.",
+    "body": "// Associations have no slots; the real ends are in getEnd()\ndef ends = assoc.getEnd()\ndef sourceType = ends[0].getType()\ndef targetType = ends[1].getType()\n",
+    "sourceExamples": []
+  }
+}

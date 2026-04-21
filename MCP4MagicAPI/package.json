@@ -1,10 +1,31 @@
 {
+  "name": "mcp4magicapi",
+  "version": "0.1.0",
+  "description": "MCP server for authoring scripts against the Cameo/MagicDraw Open API (26xR1).",
   "type": "module",
   "bin": {
     "MCP4MagicAPI": "./build/index.js"
   },
-  "scripts": {
-    "build": "tsc && chmod 755 build/index.js"
+  "files": ["build", "src/data"],
+  "engines": {
+    "node": ">=20"
   },
-  "files": ["build"]
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node build/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "cheerio": "^1.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
 }
