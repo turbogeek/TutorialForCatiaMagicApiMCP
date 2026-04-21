@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin id="com.fake.sampleaction" name="Sample Action Example Plugin" version="0.0.1" provider-name="Test" class="com.fake.SampleActionPlugin">
+  <requires>
+    <api version="1.0"/>
+  </requires>
+  <extension point="com.nomagic.magicdraw.actions">
+    <action id="sampleAction" name="Sample"/>
+    <mainMenu/>
+  </extension>
+  <runtime>
+    <library name="sampleaction.jar"/>
+  </runtime>
+</plugin>

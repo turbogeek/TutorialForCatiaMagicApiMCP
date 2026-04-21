@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin id="com.fake.depmatrix" name="Dependency Matrix Example Plugin" version="0.0.1" provider-name="Test" class="com.fake.DepMatrixPlugin">
+  <extension point="com.nomagic.magicdraw.dependencymatrix">
+    <dependencyMatrix id="m1"/>
+  </extension>
+</plugin>

@@ -7,6 +7,12 @@ import { existsSync } from "node:fs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(__dirname, "..", "..");
 const serverEntry = path.join(projectRoot, "build", "index.js");
+const fixtureExamples = path.join(
+  projectRoot,
+  "tests",
+  "fixtures",
+  "examples-mock",
+);
 
 interface JsonRpcMessage {
   jsonrpc: "2.0";
@@ -75,6 +81,10 @@ describe("MCP server (stdio)", () => {
     }
     proc = spawn("node", [serverEntry], {
       stdio: ["pipe", "pipe", "pipe"],
+      env: {
+        ...process.env,
+        CAMEO_EXAMPLES_PATH: fixtureExamples,
+      },
     }) as ChildProcessWithoutNullStreams;
     proc.stderr.on("data", (d) => {
       process.stderr.write(`[server stderr] ${d}`);
@@ -125,6 +135,46 @@ describe("MCP server (stdio)", () => {
       arguments: { name: "nope" },
     });
     const result = resp.result as { isError?: boolean; content: unknown[] };
+    const errorlike = result?.isError === true || resp.error != null;
+    expect(errorlike).toBe(true);
+  });
+
+  it("example_list returns fixture projects and respects tag filter", async () => {
+    const resp = await client.request("tools/call", {
+      name: "example_list",
+      arguments: { tag: "matrix" },
+    });
+    expect(resp.error).toBeUndefined();
+    const result = resp.result as {
+      structuredContent?: { examples: Array<{ name: string }> };
+    };
+    const names = (result.structuredContent?.examples ?? []).map((e) => e.name);
+    expect(names).toContain("dependencymatrix_sample");
+    expect(names).not.toContain("plain");
+  });
+
+  it("example_list_files returns paths under the requested example", async () => {
+    const resp = await client.request("tools/call", {
+      name: "example_list_files",
+      arguments: { example: "sampleaction" },
+    });
+    const result = resp.result as {
+      structuredContent?: { files: Array<{ relativePath: string; kind: string }> };
+    };
+    const paths = (result.structuredContent?.files ?? []).map((f) => f.relativePath);
+    expect(paths).toContain("plugin.xml");
+    expect(paths).toContain("src/com/fake/SampleActionPlugin.java");
+  });
+
+  it("example_read_file refuses path traversal", async () => {
+    const resp = await client.request("tools/call", {
+      name: "example_read_file",
+      arguments: {
+        example: "sampleaction",
+        relativePath: "../plain/src/com/fake/Plain.java",
+      },
+    });
+    const result = resp.result as { isError?: boolean };
     const errorlike = result?.isError === true || resp.error != null;
     expect(errorlike).toBe(true);
   });

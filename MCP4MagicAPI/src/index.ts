@@ -14,6 +14,14 @@ import {
   lookupBestPractice,
   listBestPractices,
 } from "./tools/bestPractices.js";
+import {
+  ExampleListInput,
+  ExampleListFilesInput,
+  ExampleReadFileInput,
+  toolExampleList,
+  toolExampleListFiles,
+  toolExampleReadFile,
+} from "./tools/examples.js";
 
 async function main(): Promise<void> {
   const paths = loadConfig();
@@ -92,6 +100,57 @@ async function main(): Promise<void> {
       return {
         content: [{ type: "text", text: JSON.stringify(all, null, 2) }],
         structuredContent: { topics: all },
+      };
+    },
+  );
+
+  server.registerTool(
+    "example_list",
+    {
+      description:
+        "List all Cameo API example projects bundled with the install, with inferred tags. Use tag or nameContains to filter.",
+      inputSchema: ExampleListInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async (args) => {
+      const rows = await toolExampleList(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(rows, null, 2) }],
+        structuredContent: { examples: rows },
+      };
+    },
+  );
+
+  server.registerTool(
+    "example_list_files",
+    {
+      description:
+        "Return the file tree of one example project (paths relative to its root, with language kind).",
+      inputSchema: ExampleListFilesInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async (args) => {
+      const rows = await toolExampleListFiles(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(rows, null, 2) }],
+        structuredContent: { files: rows },
+      };
+    },
+  );
+
+  server.registerTool(
+    "example_read_file",
+    {
+      description:
+        "Read a single file from one example project. Enforces a 512 KB ceiling and rejects path traversal.",
+      inputSchema: ExampleReadFileInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async (args) => {
+      const res = await toolExampleReadFile(paths, args);
+      return {
+        content: [{ type: "text", text: res.content }],
+        structuredContent: res,
       };
     },
   );

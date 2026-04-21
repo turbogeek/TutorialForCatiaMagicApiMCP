@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin id="com.fake.validationrule" name="Validation Rule Example Plugin" version="0.0.1" provider-name="Test" class="com.fake.ValidationRulePlugin">
+  <extension point="com.nomagic.magicdraw.validation">
+    <validationRule id="rule1"/>
+  </extension>
+</plugin>
