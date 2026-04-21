@@ -17,15 +17,30 @@ npm --version
 For this tutorial, you’ll need Node.js version 16 or higher.
 ## Directory setup (where we will build the server)
 ```
-REM Create a new directory for our project
+# Note that this will run in PowerShell
+# Create a new directory for our project
 md MCP4MagicAPI
 cd MCP4MagicAPI
-REM Initialize a new npm project
+# Initialize a new npm project
 npm init -y
-REM Install dependencies
+# Install dependencies
 npm install @modelcontextprotocol/sdk zod@3
 npm install -D @types/node typescript
-REM Create our files
+# Create our files
 md src
 new-item src\index.ts
 ```
+## Create package.json
+```
+{
+  "type": "module",
+  "bin": {
+    "MCP4MagicAPI": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod 755 build/index.js"
+  },
+  "files": ["build"]
+}
+```
+Now things get a little squirrely 
