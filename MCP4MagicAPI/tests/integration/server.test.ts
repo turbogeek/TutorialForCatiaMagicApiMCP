@@ -128,4 +128,25 @@ describe("MCP server (stdio)", () => {
     const errorlike = result?.isError === true || resp.error != null;
     expect(errorlike).toBe(true);
   });
+
+  it("exposes best_practice_lookup and returns the no-fast-strings card", async () => {
+    const list = await client.request("tools/list", {});
+    const tools = (list.result as { tools: Array<{ name: string }> }).tools;
+    expect(tools.map((t) => t.name)).toContain("best_practice_lookup");
+    expect(tools.map((t) => t.name)).toContain("best_practice_list");
+
+    const resp = await client.request("tools/call", {
+      name: "best_practice_lookup",
+      arguments: { topic: "no-fast-strings" },
+    });
+    expect(resp.error).toBeUndefined();
+    const result = resp.result as {
+      content: Array<{ type: string; text: string }>;
+      structuredContent?: { topic?: string };
+    };
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed.topic).toBe("no-fast-strings");
+    expect(parsed.summary).toMatch(/GString/);
+    expect(result.structuredContent?.topic).toBe("no-fast-strings");
+  });
 });

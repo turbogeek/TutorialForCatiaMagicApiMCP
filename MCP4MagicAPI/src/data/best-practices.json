@@ -1,0 +1,176 @@
+{
+  "sessions": {
+    "topic": "sessions",
+    "summary": "Every model mutation must be inside a SessionManager session; cancel on error.",
+    "do": [
+      "Use SessionManager.getInstance().createSession(project, 'descriptive label') before any mutating call.",
+      "Call closeSession(project) on success to commit.",
+      "Call cancelSession(project) inside a catch block to roll back; then rethrow.",
+      "Keep sessions short — one logical change per session."
+    ],
+    "dont": [
+      "Never leave a session open on exception — always cancel or close.",
+      "Don't nest sessions unless you really mean to; SessionManager is process-wide state.",
+      "Don't mutate the model outside a session — some calls silently no-op, others throw."
+    ],
+    "snippet": "session-wrap",
+    "source": "examples/refactor/.../FixJavaConstantNamesAction.java:49-54"
+  },
+  "error-reporting": {
+    "topic": "error-reporting",
+    "summary": "Three channels: log4j for plugin/diagnostic traces, GUILog for user-visible dialogs, and a diagnostic file under logs/ so Claude can read failures.",
+    "do": [
+      "Use the SysMLv2Logger wrapper (see 'console-logger-class' snippet) to route info/debug to log4j only and warn/error to both log4j and GUILog.",
+      "Use Application.getInstance().getGUILog().showError/showMessage/showQuestion for user dialogs only.",
+      "Use MDLog.getGeneralLog() or log4j directly for plugin diagnostic output.",
+      "Always pass the Throwable to the (msg, Throwable) overload — never call error(t.getMessage()) alone.",
+      "Also write to logs/ under the project so Claude Code can inspect failures on the next iteration (per project CLAUDE.md)."
+    ],
+    "dont": [
+      "Never swallow an exception — no empty catch blocks, no 'log.error(t.getMessage())' without the throwable.",
+      "Don't spam GUILog with info/debug chatter; reserve it for warnings, errors, and user prompts."
+    ],
+    "snippet": "logger-usage",
+    "source": "scripts/SysMLv2Logger.groovy + examples/annotations/.../AnnotationSample.java:140"
+  },
+  "finder": {
+    "topic": "finder",
+    "summary": "Prefer Finder.byQualifiedName and Finder.byTypeRecursively over hand-rolled owner traversal.",
+    "do": [
+      "Finder.byQualifiedName().find(project, 'A::B::C', ExpectedType.class) when you know the model path.",
+      "Finder.byTypeRecursively().find(owner, typeArray, includeOwner) when scanning a subtree.",
+      "Always null-check the result — Finder returns null/empty, not throws, when nothing matches."
+    ],
+    "dont": [
+      "Don't walk owner.getOwnedElement() recursively by hand — it's slow, error-prone, and misses some containment paths."
+    ],
+    "snippet": "finder-by-qname",
+    "source": "examples/validationhelper/.../ValidationHelperExample.java:117"
+  },
+  "no-fast-strings": {
+    "topic": "no-fast-strings",
+    "summary": "Forbidden: Groovy GStrings (double-quoted with $ interpolation) at any Cameo API boundary. They are GStringImpl, not java.lang.String, and Cameo APIs that check 'instanceof String' silently misbehave.",
+    "do": [
+      "Use single-quoted strings: 'hello ' + name.",
+      "Use '+' concatenation for dynamic content passed to Cameo APIs.",
+      "If you must build a GString first, call .toString() before handing it to Cameo: someCameoApi.setName(gstr.toString()).",
+      "For log messages that stay inside Groovy (log4j, System.out), GStrings are fine — the rule is about crossing into Cameo Java code."
+    ],
+    "dont": [
+      "Don't write element.setName(\"Attr_${i}\") — that's a GString.",
+      "Don't assume GStringImpl will auto-coerce — sometimes it does, but the failures are subtle and version-dependent.",
+      "Don't try to fix it with an 'as String' cast at the last minute — convert at the source."
+    ],
+    "snippet": "script-load-groovy",
+    "source": "user convention; Groovy docs on GStringImpl vs String"
+  },
+  "no-system-exit": {
+    "topic": "no-system-exit",
+    "summary": "System.exit() kills MagicDraw's JVM and can corrupt unsaved work. Never call it from a script or plugin.",
+    "do": [
+      "Return from the script body to end a run.",
+      "Call dispose() or setVisible(false) on JFrames/JDialogs.",
+      "Unregister listeners and close resources in a finally block.",
+      "For command-line plugins, return a non-zero byte from CommandLineAction.execute — do NOT call System.exit."
+    ],
+    "dont": [
+      "Never call System.exit at any exit code.",
+      "Don't call Runtime.getRuntime().halt either — same problem, worse.",
+      "Don't kill the Java process from outside unless you logged the PID and know it's yours (per project CLAUDE.md)."
+    ],
+    "snippet": null,
+    "source": "project CLAUDE.md"
+  },
+  "headless": {
+    "topic": "headless",
+    "summary": "No built-in isHeadless() in the Cameo API. Detect by checking for a null Application or null current Project, or by structuring code as a CommandLineAction.",
+    "do": [
+      "Check Application.getInstance() != null && Application.getInstance().getProject() != null before touching GUI code paths.",
+      "For CLI-style tools, implement com.nomagic.magicdraw.commandline.CommandLineAction and return a status byte.",
+      "Degrade gracefully: in headless mode, operate on test fixtures; in interactive mode, use the current project."
+    ],
+    "dont": [
+      "Don't call Application.getInstance().getMainFrame() without a headless guard — it's null in CLI mode.",
+      "Don't open a JDialog or Swing component in headless mode — it throws HeadlessException."
+    ],
+    "snippet": "headless-detect",
+    "source": "examples/commandlineplugin/.../CommandLineActionExample.java"
+  },
+  "rest-harness": {
+    "topic": "rest-harness",
+    "summary": "When using the REST test harness in MagicDraw, always clean up before relaunching — stale classloaders cache compiled Groovy and hide fixes.",
+    "do": [
+      "Before launching a new test, send a clean-shutdown REST command to the prior run to release its classloader and dispose GUI.",
+      "Ensure your script is tolerant of being relaunched — idempotent setup, no static singletons that assume first-launch semantics.",
+      "Log PID + timestamp + code-version to logs/ so you always know which process you started (per CLAUDE.md)."
+    ],
+    "dont": [
+      "Don't restart a test without stopping the prior one — stale classes stick around and produce confusing results.",
+      "Don't kill a JVM PID you didn't start yourself."
+    ],
+    "snippet": null,
+    "source": "project CLAUDE.md"
+  },
+  "collections-are-live": {
+    "topic": "collections-are-live",
+    "summary": "Many Cameo API getters return live, model-backed collections. Mutating while iterating causes ConcurrentModificationException or silent data loss.",
+    "do": [
+      "Copy before mutating: new ArrayList<>(elem.getOwnedElement()).each { ... }.",
+      "Or collect the mutations first (a List of closures/records) and apply them after iteration."
+    ],
+    "dont": [
+      "Don't mutate the element's owned collection inside a for/each loop over the same collection.",
+      "Don't assume a copy — always check the Javadoc; many getters are documented as 'live view'."
+    ],
+    "snippet": null,
+    "source": "Cameo Developer Guide: Accessing-and-modifying-model-element-properties.254437535.html"
+  },
+  "association-ends": {
+    "topic": "association-ends",
+    "summary": "UML Association has no slots; the real ends live in getEnd(). end[0] is source, end[1] is target. Always confirm multiplicity and type before dereferencing.",
+    "do": [
+      "Read ends as: def ends = assoc.getEnd(); def source = ends[0]; def target = ends[1].",
+      "Check instanceof/respondsTo before casting — associations can end on multiple metaclasses.",
+      "Inspect multiplicity via end.getLower() / end.getUpper() before assuming cardinality."
+    ],
+    "dont": [
+      "Don't look for association data in slots — there aren't any.",
+      "Don't assume end[0] is the 'owning' side; orientation follows the model, not the ordering."
+    ],
+    "snippet": "association-ends",
+    "source": "project CLAUDE.md + UML spec"
+  },
+  "tdd-loop": {
+    "topic": "tdd-loop",
+    "summary": "Test-first iterative flow: commit → write test → implement → run tests + REST-harness → inspect diagnostic logs → repeat. Max 10 red cycles before escalation.",
+    "do": [
+      "Commit current state BEFORE making a code change so rollback is cheap.",
+      "Write or update the test that captures the new expectation FIRST.",
+      "After each change: run unit + integration tests AND the REST-harness run.",
+      "Read diagnostic log files (not just console) to confirm pass/fail.",
+      "Commit with a message that explains *why*, not just *what*."
+    ],
+    "dont": [
+      "Don't create a new file just because you 'think you fixed something' — edit in place.",
+      "Don't start a new REST-harness test without cleanly stopping the prior one — stale class cache.",
+      "Don't loop more than 10 red cycles without asking the user for guidance."
+    ],
+    "snippet": null,
+    "source": "project CLAUDE.md"
+  },
+  "console-logger": {
+    "topic": "console-logger",
+    "summary": "Use the SysMLv2Logger wrapper for all script logging — it routes info/debug to log4j only and mirrors warn/error to the MagicDraw GUI console.",
+    "do": [
+      "Define SysMLv2Logger once (see 'console-logger-class' snippet) and load it via 'script-load-groovy'.",
+      "Instantiate per script: def logger = LoggerClass.newInstance('MyFeatureName').",
+      "Always call logger.error(msg, throwable) — the (msg, Throwable) overload preserves the stack trace in both log4j and GUILog."
+    ],
+    "dont": [
+      "Don't sprinkle Application.getInstance().getGUILog().log(...) calls throughout a script — centralize via the logger.",
+      "Don't log every info at GUILog — it clutters the console and hides real problems."
+    ],
+    "snippet": "logger-usage",
+    "source": "scripts/SysMLv2Logger.groovy"
+  }
+}
