@@ -22,6 +22,10 @@ import {
   toolExampleListFiles,
   toolExampleReadFile,
 } from "./tools/examples.js";
+import {
+  ExampleSearchInput,
+  toolExampleSearch,
+} from "./tools/exampleSearch.js";
 
 async function main(): Promise<void> {
   const paths = loadConfig();
@@ -151,6 +155,23 @@ async function main(): Promise<void> {
       return {
         content: [{ type: "text", text: res.content }],
         structuredContent: res,
+      };
+    },
+  );
+
+  server.registerTool(
+    "example_search",
+    {
+      description:
+        "Literal substring search across all example project source. Filter by fileType (java/groovy/xml/all) or exampleFilter (folder name substring). Per-file and total caps keep output bounded.",
+      inputSchema: ExampleSearchInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async (args) => {
+      const matches = await toolExampleSearch(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(matches, null, 2) }],
+        structuredContent: { matches },
       };
     },
   );

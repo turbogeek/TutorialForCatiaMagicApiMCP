@@ -179,6 +179,24 @@ describe("MCP server (stdio)", () => {
     expect(errorlike).toBe(true);
   });
 
+  it("example_search finds a substring and reports file+line", async () => {
+    const resp = await client.request("tools/call", {
+      name: "example_search",
+      arguments: { query: "hello", fileType: "java" },
+    });
+    expect(resp.error).toBeUndefined();
+    const result = resp.result as {
+      structuredContent?: {
+        matches: Array<{ example: string; relativePath: string; lineNumber: number; line: string }>;
+      };
+    };
+    const matches = result.structuredContent?.matches ?? [];
+    expect(matches.length).toBeGreaterThan(0);
+    expect(matches[0].example).toBe("sampleaction");
+    expect(matches[0].relativePath.endsWith(".java")).toBe(true);
+    expect(matches[0].lineNumber).toBeGreaterThan(0);
+  });
+
   it("exposes best_practice_lookup and returns the no-fast-strings card", async () => {
     const list = await client.request("tools/list", {});
     const tools = (list.result as { tools: Array<{ name: string }> }).tools;

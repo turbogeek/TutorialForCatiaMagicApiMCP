@@ -1,4 +1,6 @@
 import fs from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import readline from "node:readline";
 import path from "node:path";
 
 export interface ExampleSummary {
@@ -184,6 +186,105 @@ export async function listExampleFiles(
 }
 
 const MAX_FILE_BYTES = 512 * 1024; // 512 KB safety ceiling
+const SEARCH_SKIP_EXT = new Set([".jar", ".mdzip", ".zip", ".class", ".png", ".jpg", ".gif", ".svg"]);
+
+export interface SearchMatch {
+  example: string;
+  relativePath: string;
+  lineNumber: number;
+  line: string;
+}
+
+export interface SearchExamplesOptions {
+  query: string;
+  caseSensitive?: boolean;
+  fileType?: "java" | "groovy" | "xml" | "all";
+  maxMatchesPerFile?: number;
+  maxTotalMatches?: number;
+  exampleFilter?: string;
+}
+
+/**
+ * Stream-based grep across every text file in every example project.
+ * Reads line-by-line so we never hold more than a few KB in memory per file,
+ * and early-exits a file once its per-file hit cap is reached.
+ */
+export async function searchExamples(
+  examplesRoot: string,
+  opts: SearchExamplesOptions,
+): Promise<SearchMatch[]> {
+  if (!opts.query || opts.query.length === 0) {
+    throw new Error("search query must be a non-empty string");
+  }
+  const perFile = opts.maxMatchesPerFile ?? 5;
+  const totalCap = opts.maxTotalMatches ?? 200;
+  const needle = opts.caseSensitive ? opts.query : opts.query.toLowerCase();
+  const out: SearchMatch[] = [];
+
+  const examples = await listExamples(examplesRoot);
+  for (const ex of examples) {
+    if (out.length >= totalCap) break;
+    if (opts.exampleFilter && !ex.name.toLowerCase().includes(opts.exampleFilter.toLowerCase())) {
+      continue;
+    }
+    const files = await listExampleFiles(examplesRoot, ex.name);
+    for (const file of files) {
+      if (out.length >= totalCap) break;
+      const ext = path.extname(file.relativePath).toLowerCase();
+      if (SEARCH_SKIP_EXT.has(ext)) continue;
+      if (opts.fileType && opts.fileType !== "all" && file.kind !== opts.fileType) {
+        continue;
+      }
+      const abs = path.join(examplesRoot, ex.name, file.relativePath);
+      const hitsInFile = await grepFile(
+        abs,
+        needle,
+        opts.caseSensitive ?? false,
+        perFile,
+      );
+      for (const h of hitsInFile) {
+        if (out.length >= totalCap) break;
+        out.push({
+          example: ex.name,
+          relativePath: file.relativePath,
+          lineNumber: h.lineNumber,
+          line: h.line,
+        });
+      }
+    }
+  }
+  return out;
+}
+
+async function grepFile(
+  absPath: string,
+  needle: string,
+  caseSensitive: boolean,
+  maxMatches: number,
+): Promise<Array<{ lineNumber: number; line: string }>> {
+  const out: Array<{ lineNumber: number; line: string }> = [];
+  await new Promise<void>((resolve, reject) => {
+    const stream = createReadStream(absPath, { encoding: "utf8" });
+    const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+    let lineNumber = 0;
+    rl.on("line", (line) => {
+      lineNumber++;
+      if (out.length >= maxMatches) return; // drain any buffered lines after close
+      const hay = caseSensitive ? line : line.toLowerCase();
+      if (hay.includes(needle)) {
+        out.push({ lineNumber, line: line.length > 300 ? line.slice(0, 300) + "…" : line });
+        if (out.length >= maxMatches) {
+          rl.close();
+          stream.destroy();
+        }
+      }
+    });
+    rl.on("close", () => resolve());
+    rl.on("error", reject);
+    stream.on("error", reject);
+  });
+  return out;
+}
 
 export async function readExampleFile(
   examplesRoot: string,
