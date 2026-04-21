@@ -53,3 +53,6 @@ I have begun the setup for an MCP server that is hosted on Windows. This MCP ser
 At this stage, you probably get a prmt that it has completed its research and ready to create the plan. If so, tell it to proceede. If it creates the plan, review it and make any changes. 
 > [!NOTE]
 > The AI may ask you questions like where to put the agent files (I chose this project), adding Groovy/Java validation (I chose both), what versions to use (I took the recomended), etc. I usually select the default or widest scope. 
+When you are read, let it execute the plan.
+> [!WARNING]
+> This eats a lot of context tokens and on normal accounts up to 20% or more of your available tokens!
