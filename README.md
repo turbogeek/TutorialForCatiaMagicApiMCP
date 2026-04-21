@@ -1,2 +1,7 @@
 # TutorialForCatiaMagicApiMCP
 Tutorial For CatiaMagic Api MCP with examples to generate Groovy scripting code for MagicDraw/Cameo/CATIA Magic client API
+### WARNING: This is based on instructions as of 4/21/26 and subject to change. 
+### NOTICES: This is a tutorial and not supported by Dassault Systèmes. This is for educational purposes only and thus no support, guarantees, warranties, or assumption of liabilities for the content and your use of this content.
+# Setup
+This example used Claude to create and use the MCP. If you wish, you can skip to the running and using of the MCP to generate your own scripts or one of the examples based on our selection of prompts. This is based on a tutorial you can find here: https://modelcontextprotocol.io/docs/develop/build-server but modified with the assumption this is a clean install on a Windows machine.
+
