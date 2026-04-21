@@ -26,6 +26,12 @@ import {
   ExampleSearchInput,
   toolExampleSearch,
 } from "./tools/exampleSearch.js";
+import {
+  GuideListPagesInput,
+  GuideReadPageInput,
+  toolGuideListPages,
+  toolGuideReadPage,
+} from "./tools/guide.js";
 
 async function main(): Promise<void> {
   const paths = loadConfig();
@@ -172,6 +178,40 @@ async function main(): Promise<void> {
       return {
         content: [{ type: "text", text: JSON.stringify(matches, null, 2) }],
         structuredContent: { matches },
+      };
+    },
+  );
+
+  server.registerTool(
+    "guide_list_pages",
+    {
+      description:
+        "List every Cameo Developer Guide page with title and labels. Use topicFilter for a case-insensitive substring match on title or label.",
+      inputSchema: GuideListPagesInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async (args) => {
+      const rows = await toolGuideListPages(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(rows, null, 2) }],
+        structuredContent: { pages: rows },
+      };
+    },
+  );
+
+  server.registerTool(
+    "guide_read_page",
+    {
+      description:
+        "Read one Cameo Developer Guide page. Accepts either the filename or the bare pageId. Returns plain-text body, code blocks (with language), links, and prev/next navigation.",
+      inputSchema: GuideReadPageInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async (args) => {
+      const page = await toolGuideReadPage(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(page, null, 2) }],
+        structuredContent: { page },
       };
     },
   );

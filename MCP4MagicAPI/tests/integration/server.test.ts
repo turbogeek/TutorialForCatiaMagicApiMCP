@@ -13,6 +13,7 @@ const fixtureExamples = path.join(
   "fixtures",
   "examples-mock",
 );
+const fixtureGuide = path.join(projectRoot, "tests", "fixtures", "guide-mock");
 
 interface JsonRpcMessage {
   jsonrpc: "2.0";
@@ -84,6 +85,7 @@ describe("MCP server (stdio)", () => {
       env: {
         ...process.env,
         CAMEO_EXAMPLES_PATH: fixtureExamples,
+        CAMEO_GUIDE_PATH: fixtureGuide,
       },
     }) as ChildProcessWithoutNullStreams;
     proc.stderr.on("data", (d) => {
@@ -195,6 +197,35 @@ describe("MCP server (stdio)", () => {
     expect(matches[0].example).toBe("sampleaction");
     expect(matches[0].relativePath.endsWith(".java")).toBe(true);
     expect(matches[0].lineNumber).toBeGreaterThan(0);
+  });
+
+  it("guide_list_pages returns fixture pages with titles and labels", async () => {
+    const resp = await client.request("tools/call", {
+      name: "guide_list_pages",
+      arguments: {},
+    });
+    const result = resp.result as {
+      structuredContent?: { pages: Array<{ pageId: string; title: string }> };
+    };
+    const ids = (result.structuredContent?.pages ?? []).map((p) => p.pageId).sort();
+    expect(ids).toContain("254437443");
+    expect(ids).toContain("254437121");
+  });
+
+  it("guide_read_page resolves by pageId and returns body + code", async () => {
+    const resp = await client.request("tools/call", {
+      name: "guide_read_page",
+      arguments: { page: "254437443" },
+    });
+    const result = resp.result as {
+      structuredContent?: {
+        page?: { title?: string; text?: string; codeBlocks?: Array<{ code: string }> };
+      };
+    };
+    const page = result.structuredContent?.page;
+    expect(page?.title).toBe("Session management");
+    expect(page?.text).toContain("SessionManager");
+    expect((page?.codeBlocks ?? []).length).toBeGreaterThan(0);
   });
 
   it("exposes best_practice_lookup and returns the no-fast-strings card", async () => {
