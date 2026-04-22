@@ -1,4 +1,14 @@
 #!/usr/bin/env node
+/**
+ * MCP4MagicAPI entry point. Registers 22 tools across five families:
+ *   - javadoc  : class/method/package search + fuzzy verification
+ *   - guide    : page list/read + full-text search with disk-cached index
+ *   - examples : project list/tree/read + streaming substring search
+ *   - curated  : best_practice_lookup + snippet_get (modelingType-aware)
+ *   - workflow : validate_script_syntax, cameo_profile_* (6 tools)
+ * Connects over stdio. Runs a corpus health probe at startup and writes
+ * warnings to stderr when a configured path is missing or incomplete.
+ */
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { loadConfig } from "./config.js";

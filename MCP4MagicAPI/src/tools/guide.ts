@@ -1,3 +1,8 @@
+/**
+ * MCP tools: guide_list_pages / guide_read_page. Thin wrappers over the
+ * guide HTML adapter. Page identifier accepts either filename or bare
+ * numeric pageId.
+ */
 import { z } from "zod";
 import type { CameoPaths } from "../config.js";
 import { listGuidePages, readGuidePage } from "../adapters/guide.js";

@@ -1,3 +1,8 @@
+/**
+ * MCP tools: javadoc_list_packages / javadoc_get_class. Structured
+ * reads of the Cameo Javadoc HTML — package index + one class at a time.
+ * For name-based search see tools/javadocSearch.ts.
+ */
 import { z } from "zod";
 import type { CameoPaths } from "../config.js";
 import {

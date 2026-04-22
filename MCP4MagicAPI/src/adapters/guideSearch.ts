@@ -1,3 +1,15 @@
+/**
+ * TF-IDF ranked full-text search across the Cameo Developer Guide pages.
+ *
+ * Tokenization also emits camelCase splits so "SessionManager" matches
+ * both "session" and "sessionmanager". The ranker adds a title-coverage
+ * boost that's decisive for identifier-shaped queries — the canonical
+ * Session-management page wins over pages that merely mention the class
+ * many times in body text.
+ *
+ * Three-tier cache: in-memory memo → on-disk JSON at .cache/guide-index.
+ * json → rebuild. Invalidation by source-file {mtimeMs, size} signature.
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import {

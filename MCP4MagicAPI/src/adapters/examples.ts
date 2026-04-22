@@ -1,3 +1,9 @@
+/**
+ * Filesystem adapter for the bundled Cameo API example projects. Walks the
+ * examples root, tags each project by inspecting its plugin.xml elements
+ * and folder-name keywords, and provides streaming substring search across
+ * every text file. Pure filesystem — no HTML parsing.
+ */
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import readline from "node:readline";

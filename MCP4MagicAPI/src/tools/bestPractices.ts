@@ -1,3 +1,8 @@
+/**
+ * MCP tool: best-practice cards. Loads src/data/best-practices.json
+ * (lookup + list); the list is filtered by the active profile's
+ * modelingTypes so SysMLv2 sessions don't see UAF-only cards.
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";

@@ -1,3 +1,8 @@
+/**
+ * MCP tool: example_search. Streaming literal-substring grep across
+ * every text file in every bundled example project, with per-file
+ * and total caps to keep output bounded.
+ */
 import { z } from "zod";
 import type { CameoPaths } from "../config.js";
 import { searchExamples } from "../adapters/examples.js";

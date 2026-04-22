@@ -1,3 +1,12 @@
+/**
+ * Runtime configuration resolver. Layers (highest wins):
+ *   1. env vars: CAMEO_JAVADOC_PATH / CAMEO_GUIDE_PATH / CAMEO_EXAMPLES_PATH
+ *   2. the active profile from .config/profiles.json
+ *   3. hard-coded 26xR1 defaults
+ * Exposes apiVersion + modelingTypes + activeProfileName on CameoPaths so
+ * tools that filter by modeling type (e.g. best_practice_lookup) can do so
+ * transparently.
+ */
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { getActiveProfile, type ModelingType } from "./adapters/profile.js";

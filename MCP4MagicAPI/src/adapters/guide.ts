@@ -1,3 +1,10 @@
+/**
+ * HTML adapter for the Cameo Developer Guide (Confluence/Scroll export).
+ * Uses cheerio to pull <meta name="exp-page-*"> metadata for listings and
+ * to extract a clean plain-text body + code blocks + prev/next navigation
+ * for a single page. Each page's filename carries its numeric pageId, so
+ * we can resolve by either filename or bare id.
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import * as cheerio from "cheerio";

@@ -1,3 +1,9 @@
+/**
+ * MCP tools: cameo_profile_{list,active,switch,add,remove,status}.
+ * Session-start and multi-version management. _status also returns a
+ * per-corpus filesystem health probe so unhealthy setups surface before
+ * downstream tools return silent empty results.
+ */
 import { z } from "zod";
 import type { CameoPaths } from "../config.js";
 import {

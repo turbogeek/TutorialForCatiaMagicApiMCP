@@ -1,3 +1,17 @@
+/**
+ * Profile store for multi-version / multi-modeling-type setups.
+ *
+ * A profile captures {apiVersion, modelingTypes[], paths{}} so a single
+ * MCP install can serve several Cameo versions and several modeling-type
+ * combinations (UML, SysMLv1, SysMLv2, UAF, KerML, Other). Profiles
+ * persist to .config/profiles.json; one is marked active. Env vars in
+ * config.ts override the active profile's paths when set.
+ *
+ * Also exposes inspectPaths(): a per-corpus filesystem probe (Javadoc
+ * needs element-list; Guide needs index.html; Examples needs ≥1 subdir)
+ * so misconfigured paths surface with a readable reason instead of
+ * silent empty results.
+ */
 import fs from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";

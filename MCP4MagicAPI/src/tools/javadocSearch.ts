@@ -1,3 +1,9 @@
+/**
+ * MCP tools: javadoc_search (ranked fuzzy) and javadoc_verify_fqn
+ * (deterministic yes/no with correction candidates). Both are served
+ * from the shipped type/member/package-search-index.js files — no HTML
+ * parsing needed.
+ */
 import { z } from "zod";
 import type { CameoPaths } from "../config.js";
 import { searchJavadoc, verifyFqn } from "../adapters/javadocSearch.js";

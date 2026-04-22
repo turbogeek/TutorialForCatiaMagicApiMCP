@@ -1,3 +1,8 @@
+/**
+ * MCP tool: guide_search. TF-IDF with camelCase splitting and
+ * title-coverage boost. See adapters/guideSearch.ts for the full
+ * ranking story.
+ */
 import { z } from "zod";
 import type { CameoPaths } from "../config.js";
 import { searchGuide } from "../adapters/guideSearch.js";

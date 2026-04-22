@@ -1,3 +1,7 @@
+/**
+ * MCP tool: validate_script_syntax. Groovy or Java. See
+ * adapters/validate.ts for the lint + compiler pipeline.
+ */
 import { z } from "zod";
 import type { CameoPaths } from "../config.js";
 import { validateScript } from "../adapters/validate.js";

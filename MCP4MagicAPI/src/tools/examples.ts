@@ -1,3 +1,8 @@
+/**
+ * MCP tools: example_list / example_list_files / example_read_file.
+ * Browse the 57 bundled Cameo API example projects. See
+ * adapters/examples.ts for tag inference and the read safety ceiling.
+ */
 import { z } from "zod";
 import type { CameoPaths } from "../config.js";
 import {

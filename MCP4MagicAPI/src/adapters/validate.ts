@@ -1,3 +1,20 @@
+/**
+ * Groovy/Java syntax validator with two text-only lints layered on top:
+ *
+ *   1. GString lint   — flags "...$var..." double-quoted strings near
+ *                       Cameo API call sites (GStringImpl != String).
+ *   2. FQN cross-check — parses every import com.nomagic.* /
+ *                        com.dassault_systemes.* line and runs it through
+ *                        javadocSearch.verifyFqn(). Unknown imports
+ *                        become lintWarnings with "Did you mean: ..."
+ *                        suggestions from the shipped type index.
+ *
+ * When groovyc / javac are on PATH (or via compilerOverride), also shells
+ * out to compile-check. On Windows uses shell:true so .bat wrappers
+ * launch, and auto-quotes whitespace args so paths like "E:\Magic SW\"
+ * survive intact. Compiler output is parsed into {line, severity,
+ * message} tuples tolerant of drive-letter colons.
+ */
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";

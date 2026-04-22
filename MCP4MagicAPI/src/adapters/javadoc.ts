@@ -1,3 +1,13 @@
+/**
+ * HTML adapter for the Oracle-style Cameo Javadoc. Reads the flat
+ * 'element-list' file for package listings, and parses one class HTML
+ * page at a time for structured class + method + field summaries with
+ * deprecation flags.
+ *
+ * Sister module javadocSearch.ts handles fast name-based lookup via the
+ * pre-built *-search-index.js files; this file is for deep structured
+ * reads once you have an FQN.
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import * as cheerio from "cheerio";

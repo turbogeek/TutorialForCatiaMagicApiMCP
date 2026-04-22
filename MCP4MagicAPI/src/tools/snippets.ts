@@ -1,3 +1,8 @@
+/**
+ * MCP tool: reusable Cameo script snippets from src/data/snippets.json.
+ * get/list; language filter. The snippets are enforced to be GString-
+ * free by a unit test (no double-quoted "...$..." in any Groovy body).
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";

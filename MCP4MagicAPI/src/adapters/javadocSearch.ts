@@ -1,3 +1,24 @@
+/**
+ * Fast Javadoc search + deterministic FQN verification.
+ *
+ * Reuses the three pre-built JSON-ish indexes that the Javadoc tool ships
+ * (type-search-index.js, member-search-index.js, package-search-index.js)
+ * — the same files the doc-site's search box consumes. Much faster than
+ * crawling HTML.
+ *
+ * Ranking adds two adjustments on top of the raw match score:
+ *   packagePriority()  — demotes ecore / impl / emfuml2xmi / jmi.reflect
+ *                        / importexport / persistence / reportwizard /
+ *                        automaton / eclipseocl / xmi (plumbing);
+ *                        boosts helpers / openapi / ext.magicdraw /
+ *                        sysml / uaf / kerml.
+ *   classNamePriority() — rewards Helper / Factory / Finder / Manager
+ *                        suffixes (what scripters want).
+ *
+ * verifyFqn(fqn) is the deterministic guardrail against hallucinated
+ * package paths: returns {exists, candidates, similar} so callers can
+ * offer "Did you mean..." corrections automatically.
+ */
 import fs from "node:fs/promises";
 import path from "node:path";
 
