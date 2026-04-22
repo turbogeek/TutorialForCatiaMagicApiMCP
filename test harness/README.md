@@ -53,23 +53,51 @@ On a `/stop` (or when `/run` replaces a current run), the harness:
 It does NOT try to unregister listeners your script may have attached to
 Cameo; scripts should do their own listener cleanup on window close.
 
-## Install & start
+## Install & start (via Tools → Macros)
+
+Cameo's standard **Macros** plugin is the right bootstrap path for
+SysMLv2 projects — the legacy Groovy *simulation console* only exists
+where the simulation plugin is active, which is not the case for
+SysMLv2 today.
 
 **Prerequisite:** the project is at
-`E:\_Documents\git\TutorialForCatiaMagicApiMCP\` (path is hard-coded in
-`start-harness.groovy` for the logger path; edit if your tree differs).
+`E:\_Documents\git\TutorialForCatiaMagicApiMCP\` (the logger path is
+hard-coded in `start-harness.groovy` line 32; edit if your tree
+differs).
 
-1. Open Cameo / MagicDraw.
-2. Open the Groovy script console
-   (*Tools → Macros → Groovy Console*, or similar — depends on Cameo
-   version).
-3. Load and run
-   `E:\_Documents\git\TutorialForCatiaMagicApiMCP\test harness\start-harness.groovy`.
-4. A message appears in the GUI console log:
-   > `Cameo Test Harness listening on http://127.0.0.1:8765  (endpoints: /run /stop /status /log /stop-harness)`
+### One-time: register two macros
 
-The harness now lives in Cameo's JVM until you either run
-`stop-harness.groovy` or exit Cameo.
+1. **Tools → Macros → Organize Macros…** (menu path may be
+   *Tools → Macros → Organize* in some versions).
+2. Click **Add…** (or *New*). Fill in:
+   - **Name:** `Test Harness — Start`
+   - **Language:** `Groovy`
+   - **File:** `E:\_Documents\git\TutorialForCatiaMagicApiMCP\test harness\start-harness.groovy`
+   - *(Optional)* **Shortcut:** assign a keyboard shortcut if you like.
+   - Click **OK**.
+3. Click **Add…** again. Register the stop script the same way:
+   - **Name:** `Test Harness — Stop`
+   - **File:** `…\test harness\stop-harness.groovy`
+   - Click **OK**.
+4. Click **Close** on the Macros dialog.
+
+### Each Cameo session: start the harness
+
+- **Tools → Macros → Test Harness — Start**
+- The GUI console log prints:
+  > `Cameo Test Harness listening on http://127.0.0.1:8765  (endpoints: /run /stop /status /log /stop-harness)`
+
+The harness now lives in Cameo's JVM until you either run the
+*Test Harness — Stop* macro or exit Cameo. It does **not** need to be
+re-started for each script run — `/run` reuses the live server and
+simply loads the target script with a fresh classloader.
+
+### Future: plugin JAR (deferred)
+
+The next iteration will package the harness as a small Cameo plugin
+(`plugin.xml` + Java wrapper + Gradle build) that auto-starts the HTTP
+server when Cameo launches — zero-click after installation. For now,
+the Macros route gets us functional immediately with no build step.
 
 ## Use
 
@@ -105,13 +133,10 @@ Override host/port via `HARNESS_HOST` / `HARNESS_PORT`.
 
 ## Stop the harness
 
-Option 1 — from inside Cameo's console:
+**Option 1 — from inside Cameo:**
+*Tools → Macros → Test Harness — Stop* (assuming you registered it as above).
 
-```
-(load "E:\_Documents\git\TutorialForCatiaMagicApiMCP\test harness\stop-harness.groovy")
-```
-
-Option 2 — from outside:
+**Option 2 — from outside:**
 
 ```bash
 node "test harness/client/harness-client.mjs" stop-harness
