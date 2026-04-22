@@ -245,6 +245,32 @@ describe("MCP server (stdio)", () => {
     }
   }, 60_000);
 
+  it("javadoc_verify_fqn confirms a real FQN and returns a correction for a hallucinated one", async () => {
+    const good = await client.request("tools/call", {
+      name: "javadoc_verify_fqn",
+      arguments: {
+        fqn: "com.nomagic.uml2.ext.magicdraw.mdprofiles.Stereotype",
+      },
+    });
+    expect(good.error).toBeUndefined();
+    const goodRes = good.result as { structuredContent?: { exists: boolean } };
+    expect(goodRes.structuredContent?.exists).toBe(true);
+
+    const bad = await client.request("tools/call", {
+      name: "javadoc_verify_fqn",
+      arguments: {
+        fqn: "com.nomagic.uml2.ext.magicdraw.classes.mdprofiles.Stereotype",
+      },
+    });
+    const badRes = bad.result as {
+      structuredContent?: { exists: boolean; candidates: string[] };
+    };
+    expect(badRes.structuredContent?.exists).toBe(false);
+    expect(badRes.structuredContent?.candidates).toContain(
+      "com.nomagic.uml2.ext.magicdraw.mdprofiles.Stereotype",
+    );
+  });
+
   it("javadoc_search ranks exact class match first", async () => {
     const resp = await client.request("tools/call", {
       name: "javadoc_search",

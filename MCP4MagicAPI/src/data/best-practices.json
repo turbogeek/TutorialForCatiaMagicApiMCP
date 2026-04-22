@@ -190,6 +190,23 @@
     "snippet": "logger-dedicated-file",
     "source": "user requirement; scripts/SysMLv2Logger.groovy"
   },
+  "verify-fqn": {
+    "topic": "verify-fqn",
+    "summary": "MANDATORY: call javadoc_verify_fqn on every com.nomagic.* / com.dassault_systemes.* FQN BEFORE emitting it as an import. FQN hallucinations are the #1 failure mode — package paths like '.classes.mdprofiles' look plausible but don't exist. The verify tool returns the correct FQN as a candidate when yours is wrong.",
+    "do": [
+      "For every import line you are about to write, call javadoc_verify_fqn first. If exists=false, use the first candidate from the response.",
+      "Prefer helpers and factories in javadoc_search results — they are boosted by the ranker; ecore/impl/emfuml2xmi are demoted because they are plumbing, not the scripting surface.",
+      "Cross-check fluent-builder idioms against the real examples with example_search — e.g. 'StereotypesHelper.addStereotype' as one literal string. Real code beats inferred signatures.",
+      "When in doubt, pass BOTH simple name and package to javadoc_search with kind='class' and read the top 3 FQNs."
+    ],
+    "dont": [
+      "Never emit an FQN you did not verify. 'It looks like the other ones in that package' is how classes.mdprofiles.Stereotype gets hallucinated — the real FQN is mdprofiles.Stereotype.",
+      "Don't assume nested packages follow a pattern just because a sibling did. UML2 metamodel packaging is irregular (some metaclasses live directly under ext.magicdraw, others under ext.magicdraw.<pkg>).",
+      "Don't pick ecore / impl / emfuml2xmi classes as the primary reference — they are internal wrappers and often differ from the public API."
+    ],
+    "snippet": null,
+    "source": "user-reported hallucination 2026-04-22; tests/unit/javadocVerify.test.ts"
+  },
   "batch-runner": {
     "topic": "batch-runner",
     "summary": "For the 'ultimate script testing tool', run your task in Cameo's batch mode by extending com.nomagic.magicdraw.commandline.ProjectCommandLine (or CommandLineAction for plugin-scoped tasks). Cameo launches, executes your main(), and exits — providing real classpath-bound validation.",

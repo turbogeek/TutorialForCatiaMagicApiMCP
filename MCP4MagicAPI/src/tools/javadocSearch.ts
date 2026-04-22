@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { CameoPaths } from "../config.js";
-import { searchJavadoc } from "../adapters/javadocSearch.js";
+import { searchJavadoc, verifyFqn } from "../adapters/javadocSearch.js";
 
 export const JavadocSearchInput = z.object({
   query: z
@@ -22,4 +22,22 @@ export async function toolJavadocSearch(
     kind: args.kind === "all" ? undefined : args.kind,
     limit: args.limit,
   });
+}
+
+export const JavadocVerifyFqnInput = z.object({
+  fqn: z
+    .string()
+    .describe(
+      "Fully-qualified class name to verify against the shipped type index, " +
+        "e.g. 'com.nomagic.uml2.ext.magicdraw.mdprofiles.Stereotype'. Returns " +
+        "{exists, candidates, similar}. Call this before emitting any " +
+        "com.nomagic.* / com.dassault_systemes.* import in generated code.",
+    ),
+});
+
+export async function toolJavadocVerifyFqn(
+  paths: CameoPaths,
+  args: z.infer<typeof JavadocVerifyFqnInput>,
+) {
+  return verifyFqn(paths.javadocRoot, args.fqn);
 }

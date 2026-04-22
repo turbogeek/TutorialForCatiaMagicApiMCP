@@ -41,7 +41,9 @@ import {
 } from "./tools/javadoc.js";
 import {
   JavadocSearchInput,
+  JavadocVerifyFqnInput,
   toolJavadocSearch,
+  toolJavadocVerifyFqn,
 } from "./tools/javadocSearch.js";
 import { ValidateScriptInput, toolValidateScript } from "./tools/validate.js";
 
@@ -292,6 +294,28 @@ async function main(): Promise<void> {
       return {
         content: [{ type: "text", text: JSON.stringify(hits, null, 2) }],
         structuredContent: { hits },
+      };
+    },
+  );
+
+  server.registerTool(
+    "javadoc_verify_fqn",
+    {
+      description:
+        "Cheap yes/no check: does this fully-qualified class name exist in the shipped Cameo Javadoc? Returns {exists, candidates, similar}. Candidates are other FQNs with the same simple name (the typical correction for a bad package path); similar are class names close to the simple name. MUST be called before emitting any com.nomagic.* / com.dassault_systemes.* import in generated code.",
+      inputSchema: JavadocVerifyFqnInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async (args) => {
+      const result = await toolJavadocVerifyFqn(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        structuredContent: {
+          fqn: result.fqn,
+          exists: result.exists,
+          candidates: result.candidates,
+          similar: result.similar,
+        },
       };
     },
   );

@@ -42,6 +42,7 @@ describe("best practices", () => {
       "console-logger",
       "dedicated-log-file",
       "batch-runner",
+      "verify-fqn",
     ]) {
       expect(topics).toContain(required);
     }

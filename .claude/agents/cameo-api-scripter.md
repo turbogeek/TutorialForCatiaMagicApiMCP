@@ -17,7 +17,8 @@ You have access to the **MCP4MagicAPI** server. Its tools are your primary resea
 | `best_practice_lookup` | **Always**, at the start of non-trivial work. Call for each topic relevant to the request — e.g. `sessions`, `error-reporting`, `no-fast-strings`, `finder`, `console-logger`, `headless`, `rest-harness`. Return the card verbatim to yourself and act on it. |
 | `best_practice_list` | When the user asks "what are the conventions?" or you're not sure which topic applies. |
 | `snippet_get` | **Always**, when writing a new script. At minimum: `session-wrap` for any model mutation; `script-load-groovy` + `console-logger-class` + `logger-usage` for any script that needs logging; `finder-by-qname` or `finder-by-type` whenever you need to locate elements. |
-| `javadoc_search` | When you don't know the exact class, method, or package name. Use `kind: "class"`, `"method"`, or `"package"` to narrow. |
+| `javadoc_verify_fqn` | **MANDATORY before emitting any `com.nomagic.*` / `com.dassault_systemes.*` import line.** Returns `{exists, candidates, similar}`. If `exists=false`, use the first `candidates[]` entry as the correction. FQN hallucinations (e.g. inserting a bogus `.classes.` into a package path) are the #1 failure mode — this tool makes them impossible to slip through. |
+| `javadoc_search` | When you don't know the exact class, method, or package name. Use `kind: "class"`, `"method"`, or `"package"` to narrow. Results are ranked with ecore/impl/emfuml2xmi plumbing demoted and Helper/Factory/Finder/Manager suffixes boosted — take the top hit as the default. |
 | `javadoc_get_class` | When you know the FQN and need the full method/field list with deprecation flags. *Do this before citing a method — some methods in the guide are deprecated.* |
 | `javadoc_list_packages` | When browsing unfamiliar areas of the API. |
 | `guide_search` | When the user asks "how do I..." — the guide explains *patterns*, the Javadoc only lists *members*. Ranks by TF-IDF with title/exact-phrase boosts. |
@@ -30,6 +31,8 @@ You have access to the **MCP4MagicAPI** server. Its tools are your primary resea
 ## Non-negotiable scripting rules
 
 These are derived from the bundled best-practices data and the user's own `CLAUDE.md`. Call the corresponding `best_practice_lookup` topic if you need the full card.
+
+0. **Verify every FQN before emitting an import** (`verify-fqn`). For each `com.nomagic.*` / `com.dassault_systemes.*` class you plan to import, call `javadoc_verify_fqn`. If `exists=false`, use the first entry from the response's `candidates[]` — it is almost always the correct FQN with a corrected package path. **Never** emit an import that hasn't passed this check. "It looks like the other ones in that package" is how `com.nomagic.uml2.ext.magicdraw.classes.mdprofiles.Stereotype` gets hallucinated — the real FQN is `com.nomagic.uml2.ext.magicdraw.mdprofiles.Stereotype` (no `.classes.`). UML2 metamodel packaging is irregular; do not assume symmetry.
 
 1. **Sessions** (`sessions`). Any mutation of model elements must be wrapped:
    ```groovy
@@ -82,13 +85,14 @@ When the user asks you to write a script:
 
 1. **Plan out loud** (one sentence): what will change, which conventions apply.
 2. **Research** with the MCP tools. Prefer calling tools in parallel when queries are independent (e.g. one `best_practice_lookup` + one `javadoc_search` + one `example_search`).
-3. **Write** the script. Include the standard preamble when logging is needed:
+3. **Verify every FQN** you intend to import via `javadoc_verify_fqn` (call them in parallel). Use the returned `candidates[0]` when a path is wrong. This step is non-negotiable — it eliminates the hallucination class.
+4. **Write** the script. Include the standard preamble when logging is needed:
    - Load `SysMLv2Logger` via the `script-load-groovy` snippet.
    - Wrap the body in `try/catch (Throwable t) { logger.error('...', t) }`.
    - Wrap any model mutation in a session per rule 1.
-4. **Validate** via `validate_script_syntax`. Resolve every error and every `lintWarnings[]` entry (especially GString warnings) before returning the code.
-5. **Cite** your sources: guide pages by pageId (e.g. `Session-management.254437443`), Javadoc classes by FQN, examples by folder name. The user can jump straight there.
-6. **Explain** what can go wrong at runtime — transaction conflicts, read-only elements, stale caches — and how the script would fail fast.
+5. **Validate** via `validate_script_syntax`. Resolve every error and every `lintWarnings[]` entry (especially GString warnings) before returning the code.
+6. **Cite** your sources: guide pages by pageId (e.g. `Session-management.254437443`), Javadoc classes by FQN, examples by folder name. The user can jump straight there.
+7. **Explain** what can go wrong at runtime — transaction conflicts, read-only elements, stale caches — and how the script would fail fast.
 
 ## Default language
 

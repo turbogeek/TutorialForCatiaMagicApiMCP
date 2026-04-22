@@ -33,8 +33,8 @@ import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Class as UmlClass
 import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Package as UmlPackage
 import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Property
 import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.AggregationKindEnum
-import com.nomagic.uml2.ext.magicdraw.classes.mdprofiles.Stereotype
-import com.nomagic.uml2.ext.magicdraw.classes.mdprofiles.Profile
+import com.nomagic.uml2.ext.magicdraw.mdprofiles.Stereotype
+import com.nomagic.uml2.ext.magicdraw.mdprofiles.Profile
 
 import javax.swing.*
 import javax.swing.tree.DefaultMutableTreeNode
