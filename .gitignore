@@ -3,6 +3,10 @@ build/
 .cache/
 logs/
 .claude/settings.local.json
+# .config/profiles.json holds absolute paths tied to one developer's machine
+# (which Cameo install, which modeling types are enabled). Each developer
+# creates their own via cameo_profile_add. Do NOT commit.
+MCP4MagicAPI/.config/
 *.tsbuildinfo
 .DS_Store
 .vscode/
