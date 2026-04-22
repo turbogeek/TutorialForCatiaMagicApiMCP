@@ -74,3 +74,24 @@ Next it is time for us to test the MCP. Here is the prompt I wrote for this task
 ```
 When you are done, let's try using the MCP to create the following Groovy script via this prompt: Create a Java Swing form to help the user create the parts of the system by iterating from the top block to its parts and subparts to create the Blocks for all the parts and the part attributes for subparts. When the user presses ok, the model is created with the top-level system block in a system package, the second level in a subsystems package, and all other Blocks in a library package called parts catalog. This is for SyMLv1.
 ```
+## I could'a should'a
+Sadly LLM's are not the smartest kids on the block, sadly, nore are users of LLM... Me.
+
+I started to notice a trail of stupidity forming. In the Cameo API, the biggy is that the application is where we live. Generally, we don't just run a Groovy script with Cameo's classpath. Instead, we run Cameo and then run the script instide the tool. That is important. The tool does a lot to setup and control the model. By running a standalone script, none of that is possible. There are methods, but most are not what we are trying to do. For example, running a report. We have very specific command-line options for this task, but really, mostly just reporting. So, I interupted the LLM that was struggling with classpath to tell it this:
+```
+Are you aware of how to start Cameo from the command line and as part of this to run a script? We are running this particular installation: E:\Magic SW\MCSE26xR1_4_2, which means we need to run Cameo to run the script, not Groovy to run in the context of the Cameo classpath. If you can make this work, you have created the ultimate script testing tool. However. Many scripts are used by running them after Cameo launches. However, in that situation, make sure to write a separate log file that gets cleared at the start of the script, which you can use to see and correct errors.
+```
+Here is the response, which shows that I should have included this up front. 
+>Understood — I was going down the wrong path with classpath. The Cameo CLI launcher approach is much better. Let me kill the background find and investigate the Cameo command-line runner.
+
+>Ran 14 commands, read 4 files, used 2 tools
+I have enough understanding now. The guide page [Running-programs-in-batch-mode.254437299.html](E:\Magic SW\MCSE26xR1_4_2\openapi\guide\guide\Running-programs-in-batch-mode.254437299.html) explicitly says batch mode still needs a graphical environment, but scripts can be run two ways: extending CommandLine (core) or implementing CommandLineAction (plugin-scoped). Let me:
+
+>Add the dedicated-log-file-cleared-on-start convention to your Block Builder and to the snippet library (addresses your post-launch ask).
+>Document the command-line batch runner approach as a new best practice, citing the two guide pages.
+Clean up the scratch validate script.
+
+Hooray, eating of more credits avoided. Time to update the agent to ensure this does not occur again with this prompt:
+```
+insert here
+```
