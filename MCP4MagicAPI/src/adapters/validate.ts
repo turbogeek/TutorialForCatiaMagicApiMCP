@@ -2,6 +2,8 @@ import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
+import { existsSync } from "node:fs";
+import { verifyFqn } from "./javadocSearch.js";
 
 export type ValidateLanguage = "groovy" | "java";
 
@@ -186,6 +188,72 @@ export interface ValidateOptions {
   code: string;
   compilerOverride?: string; // path to groovyc/javac
   classpath?: string; // colon/semicolon-separated classpath for resolving imports
+  javadocRoot?: string; // if set, every import of com.nomagic.* /
+                        // com.dassault_systemes.* is cross-checked against
+                        // the shipped Javadoc and unknowns become lintWarnings
+}
+
+/**
+ * Extract every Groovy/Java 'import' statement's fully qualified name.
+ * Skips wildcard imports ('import com.foo.*') and static imports of methods
+ * (we only care about resolvable types).
+ */
+export function extractImports(source: string): Array<{ line: number; fqn: string; isStatic: boolean }> {
+  const out: Array<{ line: number; fqn: string; isStatic: boolean }> = [];
+  const lines = source.split(/\r?\n/);
+  // Java/Groovy: 'import [static] path.to.Type;' (the ';' is optional in Groovy)
+  // Groovy also allows: 'import path.to.Type as Alias'
+  const re = /^\s*import\s+(static\s+)?([A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)+)(\s+as\s+\w+)?\s*;?\s*$/;
+  for (let i = 0; i < lines.length; i++) {
+    const m = lines[i].match(re);
+    if (!m) continue;
+    const fqn = m[2];
+    if (fqn.endsWith(".*")) continue; // skip wildcards
+    out.push({ line: i + 1, fqn, isStatic: Boolean(m[1]) });
+  }
+  return out;
+}
+
+/**
+ * Cross-check every com.nomagic.* / com.dassault_systemes.* import against
+ * the shipped Javadoc. Unknown FQNs become lintWarnings with a suggested
+ * correction drawn from verifyFqn's candidates[].
+ */
+export async function crossCheckImports(
+  source: string,
+  javadocRoot: string,
+): Promise<ValidationIssue[]> {
+  const imports = extractImports(source);
+  const cameoImports = imports.filter(
+    (i) =>
+      i.fqn.startsWith("com.nomagic.") ||
+      i.fqn.startsWith("com.dassault_systemes."),
+  );
+  if (cameoImports.length === 0) return [];
+
+  // Static-method imports reference a method-on-class; strip the last segment
+  // to get the owning class FQN for verification.
+  const out: ValidationIssue[] = [];
+  for (const imp of cameoImports) {
+    const fqnToCheck = imp.isStatic
+      ? imp.fqn.substring(0, imp.fqn.lastIndexOf("."))
+      : imp.fqn;
+    const res = await verifyFqn(javadocRoot, fqnToCheck);
+    if (!res.exists) {
+      const suggestion =
+        res.candidates.length > 0
+          ? ` Did you mean: ${res.candidates.join(", ")}?`
+          : res.similar.length > 0
+            ? ` Similar names: ${res.similar.join(", ")}.`
+            : "";
+      out.push({
+        line: imp.line,
+        severity: "warning",
+        message: `Import '${imp.fqn}' not found in the shipped Javadoc.${suggestion}`,
+      });
+    }
+  }
+  return out;
 }
 
 function cpSep(): string {
@@ -205,6 +273,11 @@ export async function validateScript(
       const cmd = opts.compilerOverride ?? "groovyc";
       const compiler = await detectCompiler(cmd, ["--version"]);
       const lintWarnings = lintGroovyForGStrings(opts.code);
+      if (opts.javadocRoot && existsSync(opts.javadocRoot)) {
+        lintWarnings.push(
+          ...(await crossCheckImports(opts.code, opts.javadocRoot)),
+        );
+      }
       if (!compiler) {
         return {
           ok: false,
@@ -244,6 +317,12 @@ export async function validateScript(
     } else {
       const cmd = opts.compilerOverride ?? "javac";
       const compiler = await detectCompiler(cmd, ["-version"]);
+      const javaLint: ValidationIssue[] = [];
+      if (opts.javadocRoot && existsSync(opts.javadocRoot)) {
+        javaLint.push(
+          ...(await crossCheckImports(opts.code, opts.javadocRoot)),
+        );
+      }
       if (!compiler) {
         return {
           ok: false,
@@ -257,7 +336,7 @@ export async function validateScript(
           ],
           stdout: "",
           stderr: "",
-          lintWarnings: [],
+          lintWarnings: javaLint,
         };
       }
       const javaArgs = ["-proc:none", "-d", tempDir, "-implicit:none"];
@@ -274,7 +353,7 @@ export async function validateScript(
         issues,
         stdout: r.stdout,
         stderr: r.stderr,
-        lintWarnings: [],
+        lintWarnings: javaLint,
       };
     }
   } finally {

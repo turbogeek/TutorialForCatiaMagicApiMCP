@@ -10,11 +10,24 @@ The user may run your scripts either as standalone files in their `scripts/` dir
 
 You have access to the **MCP4MagicAPI** server. Its tools are your primary research channel — they encode vetted knowledge beyond what the raw Javadoc says.
 
+## Session start (mandatory)
+
+Before doing ANY substantive work:
+
+1. Call `cameo_profile_status`. Note `activeProfile`, `apiVersion`, `modelingTypes`, and the per-corpus `health`.
+2. **If `modelingTypes` is empty OR `activeProfile` is null, STOP and ask the user:**
+   > "Which API version are you targeting (e.g. 26xR1)? Which modeling types does this project use — UML / SysMLv1 / SysMLv2 / UAF / KerML / Other? (Multiple allowed.)"
+3. If the user answers with a setup you do not have a profile for, call `cameo_profile_add` with `activate:true`. If the answer matches an existing profile, call `cameo_profile_switch`.
+4. If `health.*.ok === false` for any corpus you are about to touch, tell the user which corpus is broken and which env-var or profile path to fix — **do not silently proceed** with results from only the healthy corpora.
+
+Rationale: SysMLv1 and SysMLv2 use different packages (`com.nomagic.magicdraw.sysml.*` vs `com.dassault_systemes.modeler.sysml.*`). UAF adds its own profile. Guessing wrong burns a whole iteration. See the `ask-first` best-practice card.
+
 ## Your tools (from the MCP server)
 
 | Tool | When to call it |
 |---|---|
-| `best_practice_lookup` | **Always**, at the start of non-trivial work. Call for each topic relevant to the request — e.g. `sessions`, `error-reporting`, `no-fast-strings`, `finder`, `console-logger`, `headless`, `rest-harness`. Return the card verbatim to yourself and act on it. |
+| `cameo_profile_status` / `_list` / `_active` / `_switch` / `_add` / `_remove` | Session-start + any time the user changes environments. `status` is the one you call up front; `add` creates a new environment entry; `switch` activates a saved one. |
+| `best_practice_lookup` | **Always**, at the start of non-trivial work. Call for each topic relevant to the request — e.g. `ask-first`, `sessions`, `error-reporting`, `no-fast-strings`, `finder`, `console-logger`, `headless`, `rest-harness`. Return the card verbatim to yourself and act on it. |
 | `best_practice_list` | When the user asks "what are the conventions?" or you're not sure which topic applies. |
 | `snippet_get` | **Always**, when writing a new script. At minimum: `session-wrap` for any model mutation; `script-load-groovy` + `console-logger-class` + `logger-usage` for any script that needs logging; `finder-by-qname` or `finder-by-type` whenever you need to locate elements. |
 | `javadoc_verify_fqn` | **MANDATORY before emitting any `com.nomagic.*` / `com.dassault_systemes.*` import line.** Returns `{exists, candidates, similar}`. If `exists=false`, use the first `candidates[]` entry as the correction. FQN hallucinations (e.g. inserting a bogus `.classes.` into a package path) are the #1 failure mode — this tool makes them impossible to slip through. |
@@ -26,7 +39,7 @@ You have access to the **MCP4MagicAPI** server. Its tools are your primary resea
 | `guide_list_pages` | For topic-scoped browsing. |
 | `example_search` | Before inventing a pattern, search the 57 bundled examples. If something similar exists, start from that. |
 | `example_list` / `example_list_files` / `example_read_file` | Drill into one example once `example_search` flags it. |
-| `validate_script_syntax` | **Before handing any Groovy or Java back to the user.** The tool also runs a GString lint — resolve its warnings, do not ignore them. |
+| `validate_script_syntax` | **Before handing any Groovy or Java back to the user.** It also runs a GString lint AND an automatic cross-check of every `com.nomagic.*` / `com.dassault_systemes.*` import against the Javadoc. Any `lintWarnings[]` entry is a must-fix — especially the "Did you mean:" corrections for bad package paths. |
 
 ## Non-negotiable scripting rules
 

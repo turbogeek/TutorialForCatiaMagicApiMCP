@@ -46,13 +46,51 @@ import {
   toolJavadocVerifyFqn,
 } from "./tools/javadocSearch.js";
 import { ValidateScriptInput, toolValidateScript } from "./tools/validate.js";
+import {
+  ProfileListInput,
+  ProfileActiveInput,
+  ProfileSwitchInput,
+  ProfileAddInput,
+  ProfileRemoveInput,
+  ProfileStatusInput,
+  toolProfileList,
+  toolProfileActive,
+  toolProfileSwitch,
+  toolProfileAdd,
+  toolProfileRemove,
+  toolProfileStatus,
+} from "./tools/profile.js";
 
 async function main(): Promise<void> {
-  const paths = loadConfig();
+  const paths = await loadConfig();
+
+  // Corpus health check at startup — surfaces misconfigured paths BEFORE
+  // the first tool call (per user request). Does not hard-fail the server
+  // (some tools don't need every corpus), but writes a clear warning to
+  // stderr so users see it in their MCP log.
+  const { inspectPaths } = await import("./adapters/profile.js");
+  const health = await inspectPaths({
+    javadocRoot: paths.javadocRoot,
+    guideRoot: paths.guideRoot,
+    examplesRoot: paths.examplesRoot,
+  });
+  for (const [key, entry] of Object.entries(health)) {
+    if (!entry.ok) {
+      process.stderr.write(
+        `MCP4MagicAPI: WARNING — ${key} unhealthy at ${entry.path}: ${entry.reason}. ` +
+          `Fix via env var (CAMEO_*_PATH) or cameo_profile_add / cameo_profile_switch.\n`,
+      );
+    }
+  }
+  if (paths.activeProfileName) {
+    process.stderr.write(
+      `MCP4MagicAPI: active profile '${paths.activeProfileName}' (${paths.apiVersion}; ${paths.modelingTypes.join(",") || "no modeling types"}).\n`,
+    );
+  }
 
   const server = new McpServer({
     name: "MCP4MagicAPI",
-    version: "0.1.0",
+    version: "0.2.0",
   });
 
   server.registerTool(
@@ -329,10 +367,109 @@ async function main(): Promise<void> {
       annotations: { readOnlyHint: true, idempotentHint: true },
     },
     async (args) => {
-      const result = await toolValidateScript(args);
+      const result = await toolValidateScript(paths, args);
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
         structuredContent: { result },
+      };
+    },
+  );
+
+  server.registerTool(
+    "cameo_profile_list",
+    {
+      description:
+        "List all saved Cameo profiles (name, apiVersion, modelingTypes) plus which is active. Returns {active, profiles[]}. Call this at session start to know which environment you are operating in.",
+      inputSchema: ProfileListInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async () => {
+      const r = await toolProfileList(paths);
+      return {
+        content: [{ type: "text", text: JSON.stringify(r, null, 2) }],
+        structuredContent: r,
+      };
+    },
+  );
+
+  server.registerTool(
+    "cameo_profile_active",
+    {
+      description:
+        "Return the currently active profile in full (paths, apiVersion, modelingTypes), or null with guidance when none is set.",
+      inputSchema: ProfileActiveInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async () => {
+      const r = await toolProfileActive(paths);
+      return {
+        content: [{ type: "text", text: JSON.stringify(r, null, 2) }],
+        structuredContent: r as Record<string, unknown>,
+      };
+    },
+  );
+
+  server.registerTool(
+    "cameo_profile_switch",
+    {
+      description:
+        "Activate a saved profile by name. Subsequent tool calls will resolve paths and modeling-type filters from this profile (unless env-var overrides are set).",
+      inputSchema: ProfileSwitchInput.shape,
+    },
+    async (args) => {
+      const r = await toolProfileSwitch(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(r, null, 2) }],
+        structuredContent: r,
+      };
+    },
+  );
+
+  server.registerTool(
+    "cameo_profile_add",
+    {
+      description:
+        "Create or overwrite a profile and persist it to .config/profiles.json. Provide apiVersion, modelingTypes[], and the three corpus paths. Use activate:true to make it current.",
+      inputSchema: ProfileAddInput.shape,
+    },
+    async (args) => {
+      const r = await toolProfileAdd(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(r, null, 2) }],
+        structuredContent: r as Record<string, unknown>,
+      };
+    },
+  );
+
+  server.registerTool(
+    "cameo_profile_remove",
+    {
+      description:
+        "Delete a saved profile. If it was active, the first remaining profile becomes active (or none).",
+      inputSchema: ProfileRemoveInput.shape,
+    },
+    async (args) => {
+      const r = await toolProfileRemove(paths, args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(r, null, 2) }],
+        structuredContent: r as Record<string, unknown>,
+      };
+    },
+  );
+
+  server.registerTool(
+    "cameo_profile_status",
+    {
+      description:
+        "Full health check: the currently-resolved paths (profile + env-var layering), apiVersion, modelingTypes, env-var overrides, and per-corpus filesystem probe. Call this at the start of every session — if any corpus is unhealthy, warn the user instead of letting downstream tools return empty results silently.",
+      inputSchema: ProfileStatusInput.shape,
+      annotations: { readOnlyHint: true, idempotentHint: true },
+    },
+    async () => {
+      const r = await toolProfileStatus(paths);
+      return {
+        content: [{ type: "text", text: JSON.stringify(r, null, 2) }],
+        structuredContent: r as Record<string, unknown>,
       };
     },
   );

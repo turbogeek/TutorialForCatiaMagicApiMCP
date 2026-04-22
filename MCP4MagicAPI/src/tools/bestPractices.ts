@@ -10,6 +10,13 @@ export const BestPracticeSchema = z.object({
   dont: z.array(z.string()),
   snippet: z.string().nullable().optional(),
   source: z.string(),
+  modelingTypes: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "Scope this card to specific modeling types (UML/SysMLv1/SysMLv2/UAF/KerML). " +
+        "Absent or empty means it applies universally.",
+    ),
 });
 export type BestPractice = z.infer<typeof BestPracticeSchema>;
 
@@ -60,7 +67,24 @@ export async function lookupBestPractice(
 
 export async function listBestPractices(
   paths: CameoPaths,
-): Promise<Array<Pick<BestPractice, "topic" | "summary">>> {
+): Promise<Array<Pick<BestPractice, "topic" | "summary" | "modelingTypes">>> {
   const store = await loadBestPractices(paths);
-  return Object.values(store).map(({ topic, summary }) => ({ topic, summary }));
+  const cards = Object.values(store);
+  // Filter by the active profile's modelingTypes when set. A card without
+  // a modelingTypes array is always applicable.
+  const active = paths.modelingTypes;
+  const visible =
+    active.length === 0
+      ? cards
+      : cards.filter(
+          (c) =>
+            !c.modelingTypes ||
+            c.modelingTypes.length === 0 ||
+            c.modelingTypes.some((t) => active.includes(t as never)),
+        );
+  return visible.map(({ topic, summary, modelingTypes }) => ({
+    topic,
+    summary,
+    modelingTypes,
+  }));
 }

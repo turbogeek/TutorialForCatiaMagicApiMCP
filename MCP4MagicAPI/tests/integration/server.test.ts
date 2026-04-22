@@ -245,6 +245,60 @@ describe("MCP server (stdio)", () => {
     }
   }, 60_000);
 
+  it("validate_script_syntax auto-checks Cameo imports and flags hallucinated FQNs", async () => {
+    const resp = await client.request("tools/call", {
+      name: "validate_script_syntax",
+      arguments: {
+        language: "groovy",
+        code: [
+          "import com.nomagic.uml2.ext.magicdraw.classes.mdprofiles.Stereotype",
+          "println 'hi'",
+        ].join("\n"),
+        compilerOverride: "/nope/not/real/groovyc",
+      },
+    });
+    const r = (resp.result as {
+      structuredContent?: {
+        result: { lintWarnings: Array<{ message: string }> };
+      };
+    }).structuredContent?.result;
+    expect(r?.lintWarnings.some((w) => /classes\.mdprofiles/.test(w.message))).toBe(true);
+    expect(
+      r?.lintWarnings.some((w) => /Did you mean/.test(w.message)),
+    ).toBe(true);
+  }, 60_000);
+
+  it("cameo_profile_status returns resolved paths and per-corpus health", async () => {
+    const resp = await client.request("tools/call", {
+      name: "cameo_profile_status",
+      arguments: {},
+    });
+    expect(resp.error).toBeUndefined();
+    const r = (resp.result as {
+      structuredContent?: {
+        resolvedPaths?: Record<string, string>;
+        health?: Record<string, { ok: boolean }>;
+      };
+    }).structuredContent;
+    expect(r?.resolvedPaths?.javadocRoot).toBeDefined();
+    expect(r?.health?.javadocRoot).toBeDefined();
+    // Fixture paths exist and satisfy the markers.
+    expect(r?.health?.javadocRoot.ok).toBe(true);
+    expect(r?.health?.guideRoot.ok).toBe(true);
+  });
+
+  it("cameo_profile_list returns an object with active + profiles array", async () => {
+    const resp = await client.request("tools/call", {
+      name: "cameo_profile_list",
+      arguments: {},
+    });
+    const r = (resp.result as {
+      structuredContent?: { active: string | null; profiles: unknown[] };
+    }).structuredContent;
+    expect(r).toBeDefined();
+    expect(Array.isArray(r?.profiles)).toBe(true);
+  });
+
   it("javadoc_verify_fqn confirms a real FQN and returns a correction for a hallucinated one", async () => {
     const good = await client.request("tools/call", {
       name: "javadoc_verify_fqn",

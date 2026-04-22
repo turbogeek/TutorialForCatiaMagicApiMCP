@@ -1,4 +1,22 @@
 {
+  "ask-first": {
+    "topic": "ask-first",
+    "summary": "ALWAYS confirm API version and modeling types BEFORE writing any Cameo script. SysMLv1 vs SysMLv2 vs UAF vs plain UML have different profile names, different stereotype FQNs, and different factories — guessing wrong burns a whole iteration.",
+    "do": [
+      "At the start of each session, call cameo_profile_status. If no profile is active OR modelingTypes is empty, STOP and ask the user: 'Which API version? (e.g. 26xR1) Which modeling types are enabled on the target project? (UML / SysMLv1 / SysMLv2 / UAF / KerML)'.",
+      "If the user answers with a new environment, call cameo_profile_add with the answers and activate:true.",
+      "If the user says 'SysMLv1', never suggest com.dassault_systemes.modeler.sysml.* (that is SysMLv2). Use com.nomagic.magicdraw.sysml.util.SysMLProfile.",
+      "If the user says 'SysMLv2' or 'KerML', use the com.dassault_systemes.modeler.* packages; com.nomagic.magicdraw.sysml.* is the v1 API.",
+      "Re-confirm when the user switches projects — the active profile may no longer match the new project's profiles."
+    ],
+    "dont": [
+      "Don't assume 'SysML' means SysMLv1 or SysMLv2. Ask.",
+      "Don't guess the version from the defaults — the default profile is whatever was last activated, which may be stale.",
+      "Don't fall back to plain UML imports when the user said SysMLv1 — the SysML profile is what they almost certainly want."
+    ],
+    "snippet": null,
+    "source": "2026-04-22 user requirement: agent must ask up front when info is missing"
+  },
   "sessions": {
     "topic": "sessions",
     "summary": "Every model mutation must be inside a SessionManager session; cancel on error.",
@@ -138,7 +156,8 @@
       "Don't assume end[0] is the 'owning' side; orientation follows the model, not the ordering."
     ],
     "snippet": "association-ends",
-    "source": "project CLAUDE.md + UML spec"
+    "source": "project CLAUDE.md + UML spec",
+    "modelingTypes": ["UML", "SysMLv1", "UAF"]
   },
   "tdd-loop": {
     "topic": "tdd-loop",

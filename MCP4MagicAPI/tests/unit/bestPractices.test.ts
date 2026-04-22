@@ -18,6 +18,10 @@ const testPaths: CameoPaths = {
   dataDir: path.join(projectRoot, "src", "data"),
   cacheDir: path.join(projectRoot, ".cache"),
   logsDir: path.join(projectRoot, "logs"),
+  projectRoot,
+  apiVersion: "26xR1",
+  modelingTypes: [],
+  activeProfileName: null,
 };
 
 describe("best practices", () => {
@@ -43,6 +47,7 @@ describe("best practices", () => {
       "dedicated-log-file",
       "batch-runner",
       "verify-fqn",
+      "ask-first",
     ]) {
       expect(topics).toContain(required);
     }
