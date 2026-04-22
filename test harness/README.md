@@ -101,25 +101,53 @@ the Macros route gets us functional immediately with no build step.
 
 ## Use
 
-### From a shell
+### Shell and batch wrappers (`bin/`)
+
+Pre-made, no-dependency wrappers using `curl` so anyone — and Claude —
+can drive the harness without writing a client:
 
 ```bash
-# Health check
-curl -s http://127.0.0.1:8765/health | jq .
+# Git Bash / Linux / macOS
+./test\ harness/bin/harness.sh health
+./test\ harness/bin/harness.sh run 'E:\_Documents\git\TutorialForCatiaMagicApiMCP\scripts\v2Matrix\MatrixDialog.groovy' 10000
+./test\ harness/bin/harness.sh log
+./test\ harness/bin/harness.sh stop
+./test\ harness/bin/harness.sh stop-harness
 
-# Run a script; block up to 10 s waiting for it to finish
-curl -s -X POST http://127.0.0.1:8765/run \
-  -H 'Content-Type: application/json' \
-  -d '{"scriptPath":"E:\\_Documents\\git\\TutorialForCatiaMagicApiMCP\\scripts\\v2Matrix\\MatrixDialog.groovy","waitMs":10000}' | jq .
-
-# Tail the log
-curl -s http://127.0.0.1:8765/log
-
-# Stop the current run (dispose its windows, cancel any open session)
-curl -s -X POST http://127.0.0.1:8765/stop -d '{}' -H 'Content-Type: application/json' | jq .
+# Windows cmd / PowerShell
+"test harness\bin\harness.bat" health
+"test harness\bin\harness.bat" run "E:\_Documents\git\TutorialForCatiaMagicApiMCP\scripts\v2Matrix\MatrixDialog.groovy" 10000
+"test harness\bin\harness.bat" log
+"test harness\bin\harness.bat" stop
+"test harness\bin\harness.bat" stop-harness
 ```
 
-### From Node / Claude via the bundled client
+Commands:
+
+| Wrapper command | HTTP |
+|---|---|
+| `health` | `GET /health` |
+| `status` | `GET /status` |
+| `log [SINCE]` | `GET /log[?since=SINCE]` |
+| `run SCRIPT_PATH [WAIT_MS]` | `POST /run` |
+| `stop [REASON]` | `POST /stop` |
+| `stop-harness` | `POST /stop-harness` |
+| `raw METHOD PATH [BODY]` | escape hatch |
+
+Override host/port via `HARNESS_HOST` / `HARNESS_PORT`.
+
+### Raw curl (fallback)
+
+```bash
+curl -s http://127.0.0.1:8765/health
+curl -s -X POST http://127.0.0.1:8765/run \
+  -H 'Content-Type: application/json' \
+  -d '{"scriptPath":"E:\\path\\to\\script.groovy","waitMs":10000}'
+curl -s http://127.0.0.1:8765/log
+curl -s -X POST http://127.0.0.1:8765/stop -d '{}' -H 'Content-Type: application/json'
+```
+
+### Via the Node client (optional — curl wrappers above are simpler)
 
 ```bash
 node "test harness/client/harness-client.mjs" health
@@ -178,3 +206,9 @@ per the `dedicated-log-file` convention).
 - **Windows I added don't close on `/stop`** — they were probably opened
   before the harness started (part of the baseline) or are Cameo's own
   windows. Baseline is computed per-run from `Window.getWindows()`.
+- **curl returns HTTP 000 / "Empty reply from server"** — the harness's
+  handler threw an exception. Look at `logs/test-harness.log`. Classic
+  cause: using `groovy.json.JsonOutput` or `groovy.json.JsonSlurper`
+  inside Cameo. These route through `FastStringUtils` whose SPI lookup
+  fails in the Cameo classloader (`Unable to load FastStringService`).
+  The harness uses a hand-rolled JSON encoder/decoder to avoid this.
