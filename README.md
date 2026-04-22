@@ -99,4 +99,8 @@ insert here
 Well, the first run of the script failed. I gave Claude the following prompt to update any issues. There is a little more happening, but you can see that there is some fine-tuning of the approach over time that is taken with the LLM. At this point, I am not documenting the process (I hope to capture the conversation for prosperity), but I think this has given the reader what is necessary to hone in on the correct result.
 ```
 Got this error, which means that you need to better ensure you need improvements to your MCP as "com.nomagic.uml2.ext.magicdraw.classes.mdprofiles.Stereotype" does not exist. The real item is "com.nomagic.uml2.ext.magicdraw.mdprofiles.Stereotype," so there is an insert of a very bad bit of a package path. This also means there is a fatal flaw in the MCP: it does not ensure a hallucination, and your decisions are predictable based on the MCP's data lookup. That is not the only error, as I see 6 packages that do not exist. I suspect there are other issues. Also, you need to prioritize factories and helper classes, and lower the priority of ecore over other packages, as ecore is plumbing rather than core, as you can see in the examples.
-'''
+```
+```
+Add that automatic cross-check.  Also, the MCP should return a proper error if the pointer to the installed documentation is missing or not as expected. However, it may be better to create a fast RAG of this data and a capability to add a new version. We should also have the capability to switch versions, change modeling types like SysMLv1, UAF, SysMLv2, and others depending on configuration and thus what is in the API and the profiles we have access to in the target model. This means also that the agent needs to ask up front when this information is not provided.
+```
+<img width="1024" height="1024" alt="Bob_thinking" src="https://github.com/user-attachments/assets/60a0bcfd-35b8-4de4-a3f2-5df72ba5ffad" />
