@@ -1,17 +1,9 @@
 // =============================================================================
 // MatrixDialog.groovy — main entry point for v2Matrix.
 //
-// Opens a modeless JDialog showing a MatrixCanvas of the currently-selected
-// Namespace. User controls swap axes, show-implied, and relationship-kind.
-// Close the dialog → dispose + remove reference (FR-11, NFR-1, NFR-6).
-//
-// Run via REST harness (or manually from Cameo script console):
-//   harness.bat run "E:\_Documents\git\TutorialForCatiaMagicApiMCP\scripts\v2Matrix\MatrixDialog.groovy"
-//
-// PRE-REQUISITE: select a Namespace (e.g. TF1) in the containment tree.
-// The matrix queries elements within that scope.
-//
-// Logging: logs/v2Matrix.log (cleared per run, per FR-19).
+// Opens a modeless JDialog showing a MatrixCanvas + LegendPanel for the
+// currently-selected Namespace. Controls: swap, show-implied, hide
+// ViewpointUsage, 4-palette dropdown, Refresh.
 // =============================================================================
 
 import com.nomagic.magicdraw.core.Application
@@ -19,6 +11,7 @@ import com.dassault_systemes.modeler.kerml.model.kerml.Namespace
 import com.dassault_systemes.modeler.sysml.model.sysml.PartUsage
 import com.dassault_systemes.modeler.sysml.model.sysml.RequirementUsage
 import com.dassault_systemes.modeler.sysml.model.sysml.ViewpointUsage
+import com.dassault_systemes.modeler.sysml.model.sysml.SatisfyRequirementUsage
 import javax.swing.*
 import javax.swing.border.EmptyBorder
 import java.awt.*
@@ -38,10 +31,10 @@ def loader = new GroovyClassLoader(getClass().getClassLoader())
 loader.parseClass(new File(v2Dir, 'LibraryDetector.groovy'))
 loader.parseClass(new File(v2Dir, 'MatrixModel.groovy'))
 loader.parseClass(new File(v2Dir, 'MatrixCanvas.groovy'))
-def MatrixModelCls       = loader.loadClass('v2Matrix.MatrixModel')
-def MatrixCanvasCls      = loader.loadClass('v2Matrix.MatrixCanvas')
-def RelationshipKindCls  = loader.loadClass('v2Matrix.RelationshipKind')
-def PaletteCls           = loader.loadClass('v2Matrix.Palette')
+def MatrixModelCls   = loader.loadClass('v2Matrix.MatrixModel')
+def MatrixCanvasCls  = loader.loadClass('v2Matrix.MatrixCanvas')
+def PaletteCls       = loader.loadClass('v2Matrix.Palette')
+def LegendPanelCls   = loader.loadClass('v2Matrix.LegendPanel')
 
 // ---- Get scope from browser selection ---------------------------------------
 def app = Application.getInstance()
@@ -70,7 +63,9 @@ if (scope == null) {
 }
 log.info('Scope: ' + scope.getDeclaredName())
 
-// ---- Build initial matrix ---------------------------------------------------
+// ---- Model builder ----------------------------------------------------------
+// Orientation-agnostic: MatrixModel.addSatisfyCells tests both (row=feature,
+// col=req) and (row=req, col=feature) so swap is just a row/col-types flip.
 def makeModel = { boolean swap, boolean showImplied, boolean excludeViewpoint ->
     def mm = MatrixModelCls.newInstance()
     mm.scope = scope
@@ -78,16 +73,18 @@ def makeModel = { boolean swap, boolean showImplied, boolean excludeViewpoint ->
     if (swap) {
         mm.rowTypes = [RequirementUsage]
         mm.colTypes = [PartUsage]
-        mm.rowExclusions = excludeViewpoint ? [ViewpointUsage] : []
-        // Clear default SatisfyRequirementUsage col exclusion — it's a row now
+        // SatisfyRequirementUsage IS-A RequirementUsage; exclude from rows.
+        mm.rowExclusions = (excludeViewpoint
+            ? [ViewpointUsage, SatisfyRequirementUsage]
+            : [SatisfyRequirementUsage])
         mm.colExclusions = []
-        mm.rowExclusions = mm.rowExclusions +
-            [com.dassault_systemes.modeler.sysml.model.sysml.SatisfyRequirementUsage]
     } else {
         mm.rowTypes = [PartUsage]
         mm.colTypes = [RequirementUsage]
-        if (excludeViewpoint) mm.colExclusions =
-            mm.colExclusions + [ViewpointUsage]
+        mm.colExclusions = (excludeViewpoint
+            ? [SatisfyRequirementUsage, ViewpointUsage]
+            : [SatisfyRequirementUsage])
+        mm.rowExclusions = []
     }
     mm
 }
@@ -100,6 +97,9 @@ log.info("Initial matrix: ${initialMatrix.rows.size()} rows × ${initialMatrix.c
 SwingUtilities.invokeLater {
     try {
         def canvas = MatrixCanvasCls.newInstance(initialMatrix)
+        def legend = LegendPanelCls.newInstance()
+        legend.setShowImplied(false)
+        legend.setShowSubject(false)
 
         def dialog = new JDialog(app.getMainFrame(), 'v2Matrix — ' + scope.getDeclaredName(), false)
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE)
@@ -112,7 +112,8 @@ SwingUtilities.invokeLater {
         def swapCb = new JCheckBox('Swap axes', false)
         def impliedCb = new JCheckBox('Show implied', false)
         def hideVpCb = new JCheckBox('Hide ViewpointUsage', false)
-        def paletteCombo = new JComboBox(['Standard', 'Colorblind-safe'] as String[])
+        def paletteCombo = new JComboBox(PaletteCls.allNames().toArray(new String[0]))
+        paletteCombo.setSelectedItem('Standard')
         def refreshBtn = new JButton('Refresh')
         def statusLabel = new JLabel(
             "${initialMatrix.rows.size()}r × ${initialMatrix.cols.size()}c · ${initialMatrix.cellCount()} cells")
@@ -131,28 +132,35 @@ SwingUtilities.invokeLater {
             boolean swap = swapCb.isSelected()
             boolean impl = impliedCb.isSelected()
             boolean hideVp = hideVpCb.isSelected()
-            log.info("Refresh: swap=${swap} implied=${impl} hideViewpoint=${hideVp}")
+            String palName = paletteCombo.getSelectedItem() as String
+            log.info("Refresh: swap=${swap} implied=${impl} hideViewpoint=${hideVp} palette=${palName}")
+
             def mm = makeModel(swap, impl, hideVp)
             def matrix = mm.build()
+            def palette = PaletteCls.byName(palName)
+
             canvas.setMatrix(matrix)
-            // Palette
-            def palName = paletteCombo.getSelectedItem() as String
-            canvas.palette = (palName == 'Colorblind-safe') ? PaletteCls.colorblindSafe() : PaletteCls.standard()
-            canvas.repaint()
+            canvas.setPalette(palette)
+            legend.setPalette(palette)
+            legend.setShowImplied(impl && matrix.impliedCount() > 0)
+            legend.setShowSubject(false) // no subject kind yet (deferred)
+
             statusLabel.setText(
                 "${matrix.rows.size()}r × ${matrix.cols.size()}c · ${matrix.cellCount()} cells" +
                 (impl ? " (${matrix.impliedCount()} implied)" : ''))
         }
-        [swapCb, impliedCb, hideVpCb].each { it.addActionListener({ refresh() } as ActionListener) }
-        paletteCombo.addActionListener({ refresh() } as ActionListener)
+        [swapCb, impliedCb, hideVpCb, paletteCombo].each {
+            it.addActionListener({ refresh() } as ActionListener)
+        }
         refreshBtn.addActionListener({ refresh() } as ActionListener)
 
-        // --- Layout ---
+        // --- Layout: controls NORTH, canvas CENTER, legend EAST ---
         def content = new JPanel(new BorderLayout())
         content.add(controls, BorderLayout.NORTH)
         content.add(new JScrollPane(canvas,
             ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
             ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER)
+        content.add(legend, BorderLayout.EAST)
         dialog.setContentPane(content)
 
         dialog.addWindowListener(new WindowAdapter() {

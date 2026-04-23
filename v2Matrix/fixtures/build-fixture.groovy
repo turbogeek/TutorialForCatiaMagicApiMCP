@@ -69,48 +69,99 @@ try {
     def selected = browser.getActiveTree()?.getSelectedNodes()
     if (selected != null && selected.length > 0) {
         def obj = selected[0].getUserObject()
-        if (obj instanceof Namespace) {
-            def name = ((Namespace) obj).getDeclaredName()
-            if (name != null && !name.isEmpty()) {
-                fixtureRoot = (Namespace) obj
-                log.info('Using browser-selected namespace: ' + name)
-            } else {
-                log.warn('Selected element has no declared name (system namespace?). Select a user-created Package.')
+        // Walk up to find the outermost named user Namespace.
+        while (obj != null) {
+            if (obj instanceof Namespace) {
+                def name = ((Namespace) obj).getDeclaredName()
+                if (name != null && !name.isEmpty()) fixtureRoot = (Namespace) obj
             }
-        } else {
-            log.warn('Selected element is not a Namespace: ' + obj?.getClass()?.getSimpleName())
+            try {
+                def parent = obj.respondsTo('getOwner') ? obj.getOwner() : null
+                if (parent == null || !(parent instanceof Namespace)) break
+                obj = parent
+            } catch (Exception e) { break }
         }
+        if (fixtureRoot != null) log.info('Using namespace (walked up): ' + fixtureRoot.getDeclaredName())
     }
 } catch (Exception e) {
     log.warn('Browser selection probe failed: ' + e.message)
 }
 
+// Fallback: if no selection produced a root, scan the browser tree for a
+// top-level named user-authored Namespace. Skips library namespaces.
+if (fixtureRoot == null) {
+    try {
+        def browser = app.getMainFrame().getBrowser()
+        def tree = browser.getContainmentTree()
+        def queue = new ArrayDeque()
+        queue.add(tree.getRootNode())
+        while (!queue.isEmpty() && fixtureRoot == null) {
+            def node = queue.poll()
+            def obj = null
+            try { obj = node.getUserObject() } catch (Exception ignored) {}
+            if (obj instanceof Namespace) {
+                def ns0 = (Namespace) obj
+                def n0 = ns0.getDeclaredName()
+                // Walk up from this hit to outermost named namespace.
+                def cur = ns0
+                while (cur?.getOwner() instanceof Namespace &&
+                       ((Namespace) cur.getOwner()).getDeclaredName() != null &&
+                       !((Namespace) cur.getOwner()).getDeclaredName().isEmpty()) {
+                    cur = (Namespace) cur.getOwner()
+                }
+                // Skip library content
+                def isLib = false
+                try {
+                    def loaderX = new GroovyClassLoader(getClass().getClassLoader())
+                    def LD = loaderX.parseClass(new File('E:\\_Documents\\git\\TutorialForCatiaMagicApiMCP\\scripts\\v2Matrix', 'LibraryDetector.groovy'))
+                    isLib = LD.isInStandardLibrary(cur as Element)
+                } catch (Exception ignored) {}
+                if (!isLib && cur.getDeclaredName() != null && !cur.getDeclaredName().isEmpty()) {
+                    fixtureRoot = cur
+                    log.info('Using namespace (tree-walk fallback): ' + cur.getDeclaredName())
+                    break
+                }
+            }
+            try {
+                for (int i = 0; i < node.getChildCount(); i++) queue.add(node.getChildAt(i))
+            } catch (Exception ignored) {}
+        }
+    } catch (Exception e) {
+        log.warn('Tree-walk fallback failed: ' + e.message)
+    }
+}
+
 if (fixtureRoot == null) {
     def msg = [
-        'No named SysMLv2 Package selected.',
+        'No named SysMLv2 Package found.',
         'Steps:',
         '  1. In Cameo containment tree, right-click the project root.',
-        '  2. Choose Create Element → Package.',
-        '  3. Name it e.g. "TF1".',
-        '  4. Select it (single-click).',
-        '  5. Re-run this script via the REST harness.',
+        '  2. Choose Create Element → Package, name "TF1".',
+        '  3. Re-run this script.',
     ].join('\n')
     log.error(msg)
-    app.getGUILog().log('[BuildFixture] ERROR: Select a named Package first. See logs/build-fixture.log.')
+    app.getGUILog().log('[BuildFixture] ERROR: no user-named Package found.')
     return
 }
 
 log.info('Fixture root: ' + fixtureRoot.getDeclaredName() + ' [' + fixtureRoot.getClass().getSimpleName() + ']')
 
-// ---- Helper: wire the satisfied requirement via FeatureTyping ----------------
-// SatisfyRequirementUsage.getSatisfiedRequirement() is derived from FeatureTyping.type.
-// There is no setSatisfiedRequirement() setter. We create a FeatureTyping owned by
-// the SatisfyRequirementUsage and set its type to the RequirementUsage.
+// ---- Helper: wire the satisfied requirement via ReferenceSubsetting ----------
+// SysMLv2 ':>' operator creates a ReferenceSubsetting, NOT a FeatureTyping.
+// Writing `satisfy requirement S_P1_R1a :> R1` compiles to:
+//   ReferenceSubsetting {
+//     subsettingFeature = S_P1_R1a,
+//     subsettedFeature  = R1
+//   }
+// SatisfyRequirementUsage.getSatisfiedRequirement() derives from this
+// subsetting (not from FeatureTyping). Using typing makes the derived
+// getter return self — a mistake iteration 1 made.
 def wireSatisfied = { def satisfy, def req ->
-    def ft = kermlFactory.createFeatureTyping()  // FeatureTyping is a KerML element
-    ft.setOwner(satisfy)    // FeatureTyping lives inside the SatisfyRequirementUsage
-    ft.setType(req)         // RequirementUsage is the type → derived getSatisfiedRequirement()
-    ft
+    def rs = kermlFactory.createReferenceSubsetting()
+    rs.setOwner(satisfy)
+    rs.setSubsettingFeature(satisfy)
+    rs.setSubsettedFeature(req)
+    rs
 }
 
 // ---- Build the fixture -------------------------------------------------------
@@ -210,16 +261,13 @@ try {
         log.warn('SubjectMembership creation failed: ' + e.message)
     }
 
-    // Verify satisfy wiring. Note (iteration-1 discovery): the Cameo-derived methods
-    // getSatisfyingFeature() and getSatisfiedRequirement() do NOT reliably return our
-    // programmatically-wired relationships. Matrix code uses a fallback:
-    //   - satisfying feature = satisfy.getOwner()
-    //   - satisfied req      = first RequirementUsage in satisfy.getOwnedTyping()
+    // Verify satisfy wiring now uses ReferenceSubsetting (':>' operator).
+    // With subsetting, getSatisfiedRequirement() should work directly.
     def testSatisfy = ids['S_P1_R1a']
-    log.info('Verify S_P1_R1a (owner-based fallback):')
-    log.info('  satisfy.getOwner() [→ satisfying feature] = ' + testSatisfy?.getOwner()?.getDeclaredName())
-    def firstFT = testSatisfy?.getOwnedTyping()?.find { true }
-    log.info('  satisfy.getOwnedTyping()[0].getType() [→ satisfied req] = ' + firstFT?.getType()?.getDeclaredName())
+    log.info('Verify S_P1_R1a (ReferenceSubsetting wiring):')
+    log.info('  satisfy.getOwner()                = ' + testSatisfy?.getOwner()?.getDeclaredName())
+    log.info('  satisfy.getSatisfyingFeature()    = ' + testSatisfy?.getSatisfyingFeature()?.getDeclaredName())
+    log.info('  satisfy.getSatisfiedRequirement() = ' + testSatisfy?.getSatisfiedRequirement()?.getDeclaredName())
 
     sm.closeSession(project)
     log.info('Session closed — fixture committed to model')

@@ -121,27 +121,44 @@ class MatrixModel {
     }
 
     // --- Cell population: satisfy relationships ------------------------------
+    //
+    // We place satisfy edges by testing both orientations of (feature, req) against
+    // the matrix's (rows, cols). This makes the method orientation-agnostic — the
+    // controller can configure rows=PartUsage/cols=RequirementUsage (default) or
+    // rows=RequirementUsage/cols=PartUsage (swapped) and get correct cells either
+    // way without duplicating addSatisfyCells logic.
     private void addSatisfyCells(Matrix m, Collection<SatisfyRequirementUsage> satisfies) {
         for (SatisfyRequirementUsage s : satisfies) {
             def req = resolveSatisfiedRequirement(s)
             def feature = resolveSatisfyingFeature(s)
             if (req == null || feature == null) continue
 
-            // Direct cell
+            // Direct cell: try both orientations
+            Element row = null, col = null
             if (m.rows.contains(feature) && m.cols.contains(req)) {
-                def cell = m.getOrCreate(feature, req)
+                row = feature; col = req
+            } else if (m.rows.contains(req) && m.cols.contains(feature)) {
+                row = req; col = feature
+            }
+            if (row != null) {
+                def cell = m.getOrCreate(row, col)
                 cell.backing << s
                 cell.sources << CellSource.DIRECT
             }
 
-            // Implied: walk owner chain from `feature` upward; if any ancestor
-            // is a row in the matrix, add an implied cell for (ancestor, req).
+            // Implied: walk owner chain from `feature` upward. For each ancestor,
+            // try both orientations against (rows, cols).
             if (showImplied) {
                 def ancestor = feature.getOwner()
                 while (ancestor != null) {
+                    Element aRow = null, aCol = null
                     if (m.rows.contains(ancestor) && m.cols.contains(req)) {
-                        // Don't mark as implied if same (row,col) is already direct
-                        def cell = m.getOrCreate(ancestor, req)
+                        aRow = ancestor; aCol = req
+                    } else if (m.rows.contains(req) && m.cols.contains(ancestor)) {
+                        aRow = req; aCol = ancestor
+                    }
+                    if (aRow != null) {
+                        def cell = m.getOrCreate(aRow, aCol)
                         cell.backing << s
                         cell.sources << CellSource.IMPLIED
                     }
@@ -202,15 +219,24 @@ class MatrixModel {
     // We fall back to reading the first RequirementUsage from getOwnedTyping().
 
     static RequirementUsage resolveSatisfiedRequirement(SatisfyRequirementUsage s) {
-        // Step 1: ask Cameo's derived getter.
+        // Step 1: ask Cameo's derived getter. Use `.is()` for reference equality —
+        // Groovy's `!=` would call compareTo() which Kerml elements throw on.
         def r = null
         try { r = s.getSatisfiedRequirement() } catch (Exception ignored) {}
-        if (r != null && r != s && r instanceof RequirementUsage) return (RequirementUsage) r
-        // Step 2: fallback — first RequirementUsage in owned typings.
+        if (r != null && !r.is(s) && r instanceof RequirementUsage) return (RequirementUsage) r
+        // Step 2: fallback — first RequirementUsage reachable via owned typings
+        // (legacy fixture with FeatureTyping wiring) OR owned subsettings (current
+        // fixture with ReferenceSubsetting wiring).
         try {
             for (ft in (s.getOwnedTyping() ?: [])) {
                 def t = ft.getType()
                 if (t instanceof RequirementUsage) return (RequirementUsage) t
+            }
+        } catch (Exception ignored) {}
+        try {
+            for (sub in (s.getOwnedSubsetting() ?: [])) {
+                def sf = sub.getSubsettedFeature()
+                if (sf instanceof RequirementUsage) return (RequirementUsage) sf
             }
         } catch (Exception ignored) {}
         null

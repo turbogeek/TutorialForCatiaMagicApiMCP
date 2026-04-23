@@ -240,6 +240,39 @@ relying on `ok: true` alone.
 - `element.setOwner(namespace)` works inside a `SessionManager` session.
 - To make P6 own Q: `q.setOwner(p6)` — Q becomes a sub-feature of P6.
 
+### SatisfyRequirementUsage — CORRECTED (user feedback post-iteration-1)
+
+**Correct wiring: `ReferenceSubsetting` (SysMLv2 `:>` operator), NOT `FeatureTyping` (`:`).**
+
+SysMLv2 textual notation distinguishes:
+```sysml
+part P1 {
+    ref satisfy requirement S_P1_R1a :> R1;  // ':>' = Subsetting (CORRECT)
+}
+part P3 {
+    ref satisfy requirement S_P3_R3 : R3;    // ':' = FeatureTyping (WRONG here)
+}
+```
+
+The `:>` form creates a `ReferenceSubsetting` relationship where:
+- `subsettingFeature` = the satisfy element (`S_P1_R1a`)
+- `subsettedFeature` = the target requirement (`R1`)
+
+In the KerML metamodel, `SatisfyRequirementUsage.getSatisfiedRequirement()`
+derives from the subsetting relationship, not from typing. Using
+FeatureTyping (as iteration 1 did) makes the derived getter return self.
+Using ReferenceSubsetting makes it return the subsetted RequirementUsage.
+
+**Fixed fixture builder pattern (iteration 2+)**:
+```groovy
+def s = factory.createSatisfyRequirementUsage()
+s.setOwner(part)
+def rs = kermlFactory.createReferenceSubsetting()
+rs.setOwner(s)
+rs.setSubsettingFeature(s)
+rs.setSubsettedFeature(req)
+```
+
 ### SatisfyRequirementUsage — derivation caveats (iteration 1 runtime tests)
 - **No `setSatisfiedRequirement()` setter exists.** `getSatisfiedRequirement()` is derived.
 - **No `setSatisfyingFeature()` setter exists.** `getSatisfyingFeature()` is derived.

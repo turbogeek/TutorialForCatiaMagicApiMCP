@@ -28,10 +28,12 @@ package v2Matrix
 import com.dassault_systemes.modeler.kerml.model.kerml.Element
 import java.awt.*
 import java.awt.geom.*
+import java.util.List                  // override java.awt.List from the * import
 import javax.swing.JPanel
 import javax.swing.SwingConstants
 
 class Palette {
+    String name
     Color direct
     Color implied
     Color subject
@@ -39,29 +41,80 @@ class Palette {
     Color header
     Color headerText
     Color cellText
+    Color canvasBackground
+    Color legendBackground
 
     static Palette standard() {
         new Palette(
+            name: 'Standard',
             direct: new Color(0x1976D2),   // blue
             implied: new Color(0x9E9E9E),   // gray
             subject: new Color(0x7B1FA2),   // purple
             grid: new Color(0xCCCCCC),
             header: new Color(0xF5F5F5),
             headerText: new Color(0x212121),
-            cellText: new Color(0x212121)
+            cellText: new Color(0x212121),
+            canvasBackground: Color.WHITE,
+            legendBackground: new Color(0xFAFAFA)
         )
     }
 
     static Palette colorblindSafe() {
         new Palette(
+            name: 'Colorblind-safe',
             direct: new Color(0xE67E22),   // orange
             implied: new Color(0x8E44AD),   // purple (dashed)
             subject: new Color(0x27AE60),   // green
             grid: new Color(0xCCCCCC),
             header: new Color(0xECEFF1),
             headerText: new Color(0x212121),
-            cellText: new Color(0x212121)
+            cellText: new Color(0x212121),
+            canvasBackground: Color.WHITE,
+            legendBackground: new Color(0xFAFAFA)
         )
+    }
+
+    static Palette darkMode() {
+        new Palette(
+            name: 'Dark mode',
+            direct: new Color(0x64B5F6),    // light blue on dark
+            implied: new Color(0xB0BEC5),   // light gray (dashed)
+            subject: new Color(0xCE93D8),   // light purple
+            grid: new Color(0x424242),
+            header: new Color(0x2E2E2E),
+            headerText: new Color(0xECEFF1),
+            cellText: new Color(0xECEFF1),
+            canvasBackground: new Color(0x1E1E1E),
+            legendBackground: new Color(0x242424)
+        )
+    }
+
+    static Palette helloKitty() {
+        new Palette(
+            name: 'Hello Kitty',
+            direct: new Color(0xE91E63),    // hot pink
+            implied: new Color(0xF8BBD0),   // soft pink (dashed)
+            subject: new Color(0xFFD54F),   // yellow bow
+            grid: new Color(0xFCE4EC),
+            header: new Color(0xFFF0F5),
+            headerText: new Color(0x880E4F),
+            cellText: new Color(0x880E4F),
+            canvasBackground: new Color(0xFFF8FB),
+            legendBackground: new Color(0xFFF0F5)
+        )
+    }
+
+    static Palette byName(String n) {
+        switch (n) {
+            case 'Colorblind-safe': return colorblindSafe()
+            case 'Dark mode':       return darkMode()
+            case 'Hello Kitty':     return helloKitty()
+            default:                return standard()
+        }
+    }
+
+    static List<String> allNames() {
+        ['Standard', 'Colorblind-safe', 'Dark mode', 'Hello Kitty']
     }
 }
 
@@ -71,7 +124,9 @@ class MatrixCanvas extends JPanel {
 
     int cellSize = 32
     int rowHeaderWidth = 140
-    int colHeaderHeight = 120
+    // colHeaderHeight is derived from the max column-label length × sin(45°) + pad.
+    // Computed in updatePreferredSize() once we have a FontMetrics.
+    int colHeaderHeight = 100
     Font labelFont = new Font(Font.SANS_SERIF, Font.PLAIN, 11)
     Font badgeFont = new Font(Font.SANS_SERIF, Font.BOLD, 10)
 
@@ -81,7 +136,7 @@ class MatrixCanvas extends JPanel {
 
     MatrixCanvas(Matrix m = null) {
         this.matrix = m
-        setBackground(Color.WHITE)
+        setBackground(palette?.canvasBackground ?: Color.WHITE)
         if (matrix != null) updatePreferredSize()
     }
 
@@ -92,9 +147,28 @@ class MatrixCanvas extends JPanel {
         repaint()
     }
 
+    void setPalette(Palette p) {
+        this.palette = p
+        setBackground(p.canvasBackground)
+        repaint()
+    }
+
     private void updatePreferredSize() {
-        int w = rowHeaderWidth + (matrix?.cols?.size() ?: 0) * cellSize + 2
-        int h = colHeaderHeight + (matrix?.rows?.size() ?: 0) * cellSize + 2
+        // Compute colHeaderHeight from the longest column label rendered at 45°.
+        // Need a FontMetrics — graphics may not exist yet, so use a synthetic one.
+        FontMetrics fm = getFontMetrics(labelFont)
+        int maxLabelPx = 0
+        matrix?.cols?.each { c ->
+            int w = fm.stringWidth(labelFor(c))
+            if (w > maxLabelPx) maxLabelPx = w
+        }
+        // At 45° the label's vertical projection is labelWidth * sin(45°) ≈ 0.707.
+        // Add 10px padding top + 6px for descender.
+        int derivedColH = (maxLabelPx * 0.708) as int
+        colHeaderHeight = Math.max(60, Math.min(derivedColH + 16, 260))
+
+        int w = rowHeaderWidth + (matrix?.cols?.size() ?: 0) * cellSize + 4
+        int h = colHeaderHeight + (matrix?.rows?.size() ?: 0) * cellSize + 4
         setPreferredSize(new Dimension(Math.max(w, 400), Math.max(h, 300)))
     }
 
@@ -134,18 +208,20 @@ class MatrixCanvas extends JPanel {
         g2.setColor(palette.headerText)
         g2.setFont(labelFont)
         FontMetrics fm = g2.getFontMetrics()
+        // 45°-rotated labels (FR-10a): anchor at the cell's bottom center; rotate
+        // -45° (up-and-to-the-right). Label extends up-and-right from the anchor.
+        // Max label length in the header = colHeaderHeight / sin(45°) ≈ colH * 1.414.
+        int maxLabelPx = ((colHeaderHeight - 8) * 1.414d) as int
         for (int i = 0; i < matrix.cols.size(); i++) {
             def col = matrix.cols[i]
             String name = labelFor(col)
-            int cx = rowHeaderWidth + i * cellSize + cellSize / 2 as int
-            int cy = colHeaderHeight - 6
-            // Rotate 90° counter-clockwise so the text reads bottom-to-top
+            int anchorX = rowHeaderWidth + i * cellSize + (cellSize / 2) as int
+            int anchorY = colHeaderHeight - 4
             def old = g2.getTransform()
-            g2.translate(cx, cy)
-            g2.rotate(-Math.PI / 2)
-            int maxLen = colHeaderHeight - 10
-            String shown = ellipsize(name, fm, maxLen)
-            g2.drawString(shown, 0, fm.getAscent() / 3 as int)
+            g2.translate(anchorX, anchorY)
+            g2.rotate(-Math.PI / 4)  // 45° up-right
+            String shown = ellipsize(name, fm, maxLabelPx)
+            g2.drawString(shown, 2, (fm.getAscent() / 2) - 1 as int)
             g2.setTransform(old)
         }
     }
@@ -254,7 +330,7 @@ class MatrixCanvas extends JPanel {
         }
     }
 
-    private static void drawArrowhead(Graphics2D g2, int tipX, int tipY, int fromX, int fromY) {
+    static void drawArrowhead(Graphics2D g2, int tipX, int tipY, int fromX, int fromY) {
         double angle = Math.atan2(tipY - fromY, tipX - fromX)
         int size = 6
         int ax = (int) (tipX - size * Math.cos(angle - Math.PI / 6))
@@ -295,5 +371,135 @@ class MatrixCanvas extends JPanel {
             if (fm.stringWidth(sub) + ew <= maxPx) return sub + ell
         }
         return ell
+    }
+}
+
+// =============================================================================
+// LegendPanel — FR-10b. Shows a swatch for each cell style in the current view.
+// Rebuilt when palette, show-implied, or kind changes.
+// =============================================================================
+class LegendPanel extends JPanel {
+    Palette palette = Palette.standard()
+    boolean showImpliedEntry = false
+    boolean showSubjectEntry = false
+    boolean showBadgeEntry = true
+    Font titleFont = new Font(Font.SANS_SERIF, Font.BOLD, 12)
+    Font labelFont = new Font(Font.SANS_SERIF, Font.PLAIN, 11)
+    int swatchSize = 28
+
+    LegendPanel() {
+        setPreferredSize(new Dimension(220, 160))
+        setBackground(palette.legendBackground)
+    }
+
+    void setPalette(Palette p) {
+        this.palette = p
+        setBackground(p.legendBackground)
+        repaint()
+    }
+
+    void setShowImplied(boolean v) { showImpliedEntry = v; repaint() }
+    void setShowSubject(boolean v) { showSubjectEntry = v; repaint() }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g)
+        Graphics2D g2 = (Graphics2D) g.create()
+        try {
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+            g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
+            int pad = 10
+            int y = pad + 4
+
+            g2.setColor(palette.headerText)
+            g2.setFont(titleFont)
+            g2.drawString('Legend — ' + palette.name, pad, y + 10)
+            y += 28
+
+            g2.setFont(labelFont)
+            // Direct
+            drawEntry(g2, pad, y, 'Direct satisfy', CellStyle.DIRECT)
+            y += swatchSize + 6
+            // Implied (if relevant)
+            if (showImpliedEntry) {
+                drawEntry(g2, pad, y, 'Implied (via sub-feature)', CellStyle.IMPLIED)
+                y += swatchSize + 6
+            }
+            // Subject (if relevant)
+            if (showSubjectEntry) {
+                drawEntry(g2, pad, y, 'Subject (FR-7)', CellStyle.SUBJECT)
+                y += swatchSize + 6
+            }
+            // Badge
+            if (showBadgeEntry) {
+                drawEntry(g2, pad, y, 'Count badge (>1)', CellStyle.BADGE)
+                y += swatchSize + 6
+            }
+        } finally {
+            g2.dispose()
+        }
+    }
+
+    private enum CellStyle { DIRECT, IMPLIED, SUBJECT, BADGE }
+
+    private void drawEntry(Graphics2D g2, int x, int y, String label, CellStyle style) {
+        // Swatch box
+        int s = swatchSize
+        g2.setColor(palette.canvasBackground)
+        g2.fillRect(x, y, s, s)
+        g2.setColor(palette.grid)
+        g2.drawRect(x, y, s, s)
+
+        // Style-specific drawing
+        int pad = 6
+        int x1 = x + pad, y1 = y + s - pad, x2 = x + s - pad, y2 = y + pad
+        Stroke saved = g2.getStroke()
+        switch (style) {
+            case CellStyle.DIRECT:
+                g2.setColor(palette.direct)
+                g2.setStroke(new BasicStroke(2f))
+                g2.drawLine(x1, y1, x2, y2)
+                MatrixCanvas.drawArrowhead(g2, x2, y2, x1, y1)
+                break
+            case CellStyle.IMPLIED:
+                g2.setColor(palette.implied)
+                g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER,
+                        10f, [4f, 3f] as float[], 0f))
+                g2.drawLine(x1, y1, x2, y2)
+                MatrixCanvas.drawArrowhead(g2, x2, y2, x1, y1)
+                break
+            case CellStyle.SUBJECT:
+                g2.setColor(palette.subject)
+                g2.setStroke(new BasicStroke(2f))
+                g2.drawLine(x1, y1, x2, y2)
+                MatrixCanvas.drawArrowhead(g2, x2, y2, x1, y1)
+                g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10))
+                g2.drawString('S', x + s - 10, y + s - 4)
+                break
+            case CellStyle.BADGE:
+                g2.setColor(palette.direct)
+                g2.setStroke(new BasicStroke(2f))
+                g2.drawLine(x1, y1, x2, y2)
+                MatrixCanvas.drawArrowhead(g2, x2, y2, x1, y1)
+                g2.setColor(new Color(0xFFFFFF))
+                int r = 12
+                g2.fillOval(x + 1, y + 1, r, r)
+                g2.setColor(palette.direct)
+                g2.drawOval(x + 1, y + 1, r, r)
+                g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10))
+                FontMetrics fm = g2.getFontMetrics()
+                String t = '2'
+                int tx = x + 1 + (r - fm.stringWidth(t)) / 2 as int
+                int ty = y + 1 + (r + fm.getAscent()) / 2 - 1 as int
+                g2.drawString(t, tx, ty)
+                break
+        }
+        g2.setStroke(saved)
+
+        // Label text
+        g2.setColor(palette.headerText)
+        g2.setFont(labelFont)
+        FontMetrics fm = g2.getFontMetrics()
+        g2.drawString(label, x + s + 10, y + (s + fm.getAscent()) / 2 - 2 as int)
     }
 }

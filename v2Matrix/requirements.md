@@ -115,9 +115,24 @@ when toggled on:
 - Multiplicity marker (circle around the arrow) when the relationship is
   1:many or many:1.
 - Implied-vs-direct styling (distinct color or dash).
-- User-configurable palette (MVP: one default palette plus one
-  "colorblind-safe" preset).
+- User-configurable palette. MVP palettes: **Standard**, **Colorblind-safe**,
+  **Dark mode**, **Hello Kitty** (pink/white whimsical).
 *Acceptance:* Each toggle produces a visibly different rendering in TF-1.
+
+**FR-10a. Column-label angle.** Column header labels shall render at **45°**
+(rising from the cell boundary) rather than vertical, to improve
+readability and axial compactness.
+*Acceptance:* Headers slope up-right; the header band height equals roughly
+`label_length * sin(45°)`; labels remain fully legible on TF-1.
+
+**FR-10b. Legend.** The dialog shall display a **legend panel** listing the
+distinct visual styles used in the current view. At minimum the legend
+shows: direct cell, implied cell, subject cell, and badge (multi-count)
+— each with a miniature rendering in the current palette.
+*Acceptance:* Toggling the palette combo re-renders the legend swatches;
+toggling show-implied off hides the implied row in the legend; swapping
+palette between Standard/Colorblind/Dark/Hello Kitty changes all swatches
+visibly.
 
 ### 2.4 Interactions
 
