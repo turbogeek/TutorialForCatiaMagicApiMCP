@@ -133,6 +133,11 @@ class MatrixCanvas extends JPanel {
     // Set by controller
     boolean showAnnotations = true
     boolean showBadges = true
+    // When true, rows = requirement side, cols = satisfier side. Arrow reverses
+    // direction so it still points from satisfier → requirement (FR-9).
+    // Default (false): arrow ↗ (lower-left → upper-right), satisfier-in-row, req-in-col.
+    // Swapped (true):  arrow ↙ (upper-right → lower-left), req-in-row, satisfier-in-col.
+    boolean axesSwapped = false
 
     MatrixCanvas(Matrix m = null) {
         this.matrix = m
@@ -288,7 +293,10 @@ class MatrixCanvas extends JPanel {
             g2.fillRect(x + 1, y + 1, s - 1, s - 1)
         }
 
-        // Arrow lower-left → upper-right (FR-9 default direction; swap-axes flips it)
+        // Arrow: satisfier → requirement at 45° (FR-9). Default arrow runs
+        // lower-left (row=satisfier) → upper-right (col=req). When axes are
+        // swapped, tail/tip reverse so it still points from the satisfier
+        // toward the requirement — visually upper-right → lower-left (↙).
         Stroke saved = g2.getStroke()
         Color arrowColor = direct ? palette.direct : (implied ? palette.implied : palette.subject)
         g2.setColor(arrowColor)
@@ -299,12 +307,20 @@ class MatrixCanvas extends JPanel {
             g2.setStroke(new BasicStroke(2f))
         }
         int pad = 6
-        int x1 = x + pad
-        int y1 = y + s - pad
-        int x2 = x + s - pad
-        int y2 = y + pad
-        g2.drawLine(x1, y1, x2, y2)
-        drawArrowhead(g2, x2, y2, x1, y1)
+        int tailX, tailY, tipX, tipY
+        if (axesSwapped) {
+            // Row = requirement, col = satisfier → tail at upper-right (satisfier),
+            // tip at lower-left (requirement). Arrow ↙.
+            tailX = x + s - pad; tailY = y + pad
+            tipX  = x + pad;     tipY  = y + s - pad
+        } else {
+            // Row = satisfier, col = requirement → tail at lower-left (satisfier),
+            // tip at upper-right (requirement). Arrow ↗.
+            tailX = x + pad;     tailY = y + s - pad
+            tipX  = x + s - pad; tipY  = y + pad
+        }
+        g2.drawLine(tailX, tailY, tipX, tipY)
+        drawArrowhead(g2, tipX, tipY, tailX, tailY)
         g2.setStroke(saved)
 
         // Badge count (FR-8)
@@ -383,6 +399,7 @@ class LegendPanel extends JPanel {
     boolean showImpliedEntry = false
     boolean showSubjectEntry = false
     boolean showBadgeEntry = true
+    boolean axesSwapped = false    // mirrors MatrixCanvas — legend arrows flip to match
     Font titleFont = new Font(Font.SANS_SERIF, Font.BOLD, 12)
     Font labelFont = new Font(Font.SANS_SERIF, Font.PLAIN, 11)
     int swatchSize = 28
@@ -400,6 +417,7 @@ class LegendPanel extends JPanel {
 
     void setShowImplied(boolean v) { showImpliedEntry = v; repaint() }
     void setShowSubject(boolean v) { showSubjectEntry = v; repaint() }
+    void setAxesSwapped(boolean v) { axesSwapped = v; repaint() }
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -450,9 +468,17 @@ class LegendPanel extends JPanel {
         g2.setColor(palette.grid)
         g2.drawRect(x, y, s, s)
 
-        // Style-specific drawing
+        // Style-specific drawing. (x1,y1) = tail, (x2,y2) = tip. Flip when
+        // axes are swapped so the legend arrow matches the canvas direction.
         int pad = 6
-        int x1 = x + pad, y1 = y + s - pad, x2 = x + s - pad, y2 = y + pad
+        int x1, y1, x2, y2
+        if (axesSwapped) {
+            x1 = x + s - pad; y1 = y + pad          // tail upper-right
+            x2 = x + pad;     y2 = y + s - pad      // tip lower-left (↙)
+        } else {
+            x1 = x + pad;     y1 = y + s - pad      // tail lower-left
+            x2 = x + s - pad; y2 = y + pad          // tip upper-right (↗)
+        }
         Stroke saved = g2.getStroke()
         switch (style) {
             case CellStyle.DIRECT:

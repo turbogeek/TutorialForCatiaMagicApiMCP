@@ -141,7 +141,10 @@ SwingUtilities.invokeLater {
 
             canvas.setMatrix(matrix)
             canvas.setPalette(palette)
+            canvas.axesSwapped = swap             // flip arrow direction (↗ ↔ ↙)
+            canvas.repaint()
             legend.setPalette(palette)
+            legend.setAxesSwapped(swap)           // legend swatches match canvas
             legend.setShowImplied(impl && matrix.impliedCount() > 0)
             legend.setShowSubject(false) // no subject kind yet (deferred)
 
