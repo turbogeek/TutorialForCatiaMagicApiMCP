@@ -221,6 +221,51 @@ This asymmetry is a real limitation, not a bug — it's why the agent
 protocol requires `lintWarnings` to pass before a commit, rather than
 relying on `ok: true` alone.
 
+## Iteration 1 API discoveries (probe scripts, SysMLv2 element creation)
+
+### Factory access
+- `project.getElementsFactory()` returns `com.nomagic.uml2.SmartElementsFactory` — **NOT** the SysML factory.
+- `com.dassault_systemes.modeler.sysml.model.sysml.SysMLFactory.eINSTANCE` is the correct singleton.
+  Returns `SysMLFactoryImpl` with 140+ `create*()` methods.
+- `com.dassault_systemes.modeler.kerml.model.kerml.KerMLFactory.eINSTANCE` works for KerML base elements.
+  `kermlFactory.createPackage()` works. `sysmlFactory.createPackage()` does **not exist**.
+- KerML and UML2 Element hierarchies are **separate** — `ModelElementsManager.addElement()` (which takes `mdkernel.Element`) cannot accept SysMLv2 elements.
+
+### Naming
+- `element.setDeclaredName(String)` — from `kerml.Element`; this is the naming API.
+- `element.getHumanName()` reflects the declared name: returns `"RequirementUsage TestR1"` after `setDeclaredName("TestR1")`.
+- `element.setName()` does **not** exist on SysMLv2 elements.
+
+### Ownership
+- `element.setOwner(namespace)` works inside a `SessionManager` session.
+- To make P6 own Q: `q.setOwner(p6)` — Q becomes a sub-feature of P6.
+
+### SatisfyRequirementUsage
+- **No `setSatisfiedRequirement()` setter exists.** `getSatisfiedRequirement()` is a **derived** property.
+- The satisfied requirement derives from `FeatureTyping.type` owned by the SatisfyRequirementUsage:
+  ```groovy
+  def s = factory.createSatisfyRequirementUsage()
+  s.setOwner(part)          // satisfying feature = owner (also derived)
+  def ft = factory.createFeatureTyping()
+  ft.setOwner(s)            // FeatureTyping owned by the SatisfyRequirementUsage
+  ft.setType(req)           // RequirementUsage is the type → satisfiedRequirement derivation
+  ```
+- `getSatisfyingFeature()` is also derived — it returns the **owner** of the SatisfyRequirementUsage.
+
+### SubjectMembership (FR-7)
+- `factory.createSubjectMembership()` works.
+- `subjM.setOwner(r7)` — membership is owned by the requirement.
+- `subjM.setMemberElement(p2)` — reference-only (no ownership transfer), correct for referencing a part.
+- `subjM.setOwnedSubjectParameter(p2)` — **steals ownership** of p2; avoid unless p2 is created fresh.
+- `r7.getSubjectParameter()` returns the `Usage` referenced by the membership.
+
+### Project model root
+- For DST-native SysMLv2 projects: `project.getModel()`, `project.getPrimaryModel()`, `project.getModels()` all return null/empty.
+- `project.getModels()` returns `Collections.emptyList()` (immutable).
+- The browser root contains `IPrimaryProject` / `ILockableProject` nodes — not KerML Namespace.
+- **Correct pattern**: require the user to select a named user Package in the browser before running a creation script. This is the same pattern as `RequirementSatisfyMatrixGraphics.groovy`.
+- Only accept a namespace with a non-null, non-empty `getDeclaredName()` to avoid capturing system library namespaces (which also show as Namespace instances in the tree but have null names).
+
 ## What we did NOT find (negative results, worth recording)
 
 - **No `SysMLv2Finder` class.** We reuse `com.nomagic.magicdraw.uml.Finder`.
