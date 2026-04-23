@@ -34,6 +34,7 @@
 import com.nomagic.magicdraw.core.Application
 import com.nomagic.magicdraw.openapi.uml.SessionManager
 import com.dassault_systemes.modeler.sysml.model.sysml.SysMLFactory
+import com.dassault_systemes.modeler.kerml.model.kerml.KerMLFactory
 import com.dassault_systemes.modeler.kerml.model.kerml.Namespace
 import com.dassault_systemes.modeler.kerml.model.kerml.Element
 
@@ -49,6 +50,7 @@ log.info('=== build-fixture.groovy start ===')
 def app     = Application.getInstance()
 def project = app.getProject()
 def factory = SysMLFactory.eINSTANCE
+def kermlFactory = KerMLFactory.eINSTANCE   // for FeatureTyping etc. not exposed on SysMLFactoryImpl
 def sm      = SessionManager.getInstance()
 
 if (project == null) {
@@ -105,7 +107,7 @@ log.info('Fixture root: ' + fixtureRoot.getDeclaredName() + ' [' + fixtureRoot.g
 // There is no setSatisfiedRequirement() setter. We create a FeatureTyping owned by
 // the SatisfyRequirementUsage and set its type to the RequirementUsage.
 def wireSatisfied = { def satisfy, def req ->
-    def ft = factory.createFeatureTyping()
+    def ft = kermlFactory.createFeatureTyping()  // FeatureTyping is a KerML element
     ft.setOwner(satisfy)    // FeatureTyping lives inside the SatisfyRequirementUsage
     ft.setType(req)         // RequirementUsage is the type → derived getSatisfiedRequirement()
     ft
@@ -189,33 +191,35 @@ try {
     makeSatisfy('S_Q_R6', q, reqs[5])
     log.info('S_Q_R6 (implies P6→R6 when show-implied is on)')
 
-    // R7 subject membership: SubjectMembership.setMemberElement(P2)
-    // SubjectMembership.setMemberElement is a reference (no ownership transfer).
-    // R7.getSubjectParameter() derives from this membership.
+    // R7 subject membership — SIMPLIFIED for iteration 1.
+    // WARNING discovered in iteration-1 testing: SubjectMembership.setMemberElement(P2)
+    // transfers ownership of P2 into the membership, removing P2 from TF1. To avoid
+    // corrupting the fixture, we do NOT wire the subject here. The FR-7 test (matrix
+    // on "subject" kind) is deferred until we discover the correct SysMLv2 wiring
+    // that references P2 without moving it (likely via a ReferenceSubsetting inside
+    // the SubjectMembership).
+    //
+    // For now: create the SubjectMembership shell so R7 has one, but leave its
+    // member-element empty. Matrix code's "subject" kind will return empty cells
+    // until this is resolved.
     try {
         def subjM = factory.createSubjectMembership()
         subjM.setOwner(r7)
-        try {
-            subjM.setMemberElement(parts[1])  // P2 (index 1)
-            log.info('R7 subject set via setMemberElement(P2)')
-        } catch (Exception e1) {
-            log.warn('setMemberElement(P2) failed: ' + e1.message)
-            try {
-                subjM.setOwnedSubjectParameter(parts[1])
-                log.info('R7 subject set via setOwnedSubjectParameter(P2) (fallback)')
-            } catch (Exception e2) {
-                log.warn('SubjectMembership could not reference P2: ' + e2.message)
-            }
-        }
-        log.info('r7.getSubjectParameter() = ' + (r7.getSubjectParameter()?.getDeclaredName() ?: 'null'))
+        log.info('R7 SubjectMembership created (empty — subject wiring deferred)')
     } catch (Exception e) {
         log.warn('SubjectMembership creation failed: ' + e.message)
     }
 
-    // Verify satisfy derivation
+    // Verify satisfy wiring. Note (iteration-1 discovery): the Cameo-derived methods
+    // getSatisfyingFeature() and getSatisfiedRequirement() do NOT reliably return our
+    // programmatically-wired relationships. Matrix code uses a fallback:
+    //   - satisfying feature = satisfy.getOwner()
+    //   - satisfied req      = first RequirementUsage in satisfy.getOwnedTyping()
     def testSatisfy = ids['S_P1_R1a']
-    log.info('Verify S_P1_R1a: satisfyingFeature=' + testSatisfy?.getSatisfyingFeature()?.getDeclaredName()
-             + ' satisfiedReq=' + testSatisfy?.getSatisfiedRequirement()?.getDeclaredName())
+    log.info('Verify S_P1_R1a (owner-based fallback):')
+    log.info('  satisfy.getOwner() [→ satisfying feature] = ' + testSatisfy?.getOwner()?.getDeclaredName())
+    def firstFT = testSatisfy?.getOwnedTyping()?.find { true }
+    log.info('  satisfy.getOwnedTyping()[0].getType() [→ satisfied req] = ' + firstFT?.getType()?.getDeclaredName())
 
     sm.closeSession(project)
     log.info('Session closed — fixture committed to model')

@@ -240,24 +240,40 @@ relying on `ok: true` alone.
 - `element.setOwner(namespace)` works inside a `SessionManager` session.
 - To make P6 own Q: `q.setOwner(p6)` — Q becomes a sub-feature of P6.
 
-### SatisfyRequirementUsage
-- **No `setSatisfiedRequirement()` setter exists.** `getSatisfiedRequirement()` is a **derived** property.
-- The satisfied requirement derives from `FeatureTyping.type` owned by the SatisfyRequirementUsage:
-  ```groovy
-  def s = factory.createSatisfyRequirementUsage()
-  s.setOwner(part)          // satisfying feature = owner (also derived)
-  def ft = factory.createFeatureTyping()
-  ft.setOwner(s)            // FeatureTyping owned by the SatisfyRequirementUsage
-  ft.setType(req)           // RequirementUsage is the type → satisfiedRequirement derivation
+### SatisfyRequirementUsage — derivation caveats (iteration 1 runtime tests)
+- **No `setSatisfiedRequirement()` setter exists.** `getSatisfiedRequirement()` is derived.
+- **No `setSatisfyingFeature()` setter exists.** `getSatisfyingFeature()` is derived.
+- **Runtime test results** with a fixture created programmatically:
   ```
-- `getSatisfyingFeature()` is also derived — it returns the **owner** of the SatisfyRequirementUsage.
+  satisfy.getOwner()                  → P1        (correct — we called setOwner)
+  satisfy.getSatisfyingFeature()      → null      (unexpected — derivation returns null)
+  satisfy.getSatisfiedRequirement()   → satisfy   (WRONG — returns self as fallback)
+  satisfy.getOwnedTyping()            → [FT: type=R1]  (correct — our FeatureTyping is registered)
+  satisfy.getType()                   → [RequirementCheck]  (doesn't include R1)
+  ```
+- **Conclusion**: Cameo's implementation of `getSatisfiedRequirement()` does NOT read from our programmatically-added `FeatureTyping.type`. It likely expects a different wiring (possibly `ReferenceSubsetting`, or direct EMF reference via an internal EReference). For user-authored SysMLv2 written as `satisfy req R1 by P1`, Cameo's textual compiler uses that different wiring.
+- **Matrix-code contract (MatrixModel.groovy)**: use a two-step fallback when querying a SatisfyRequirementUsage:
+  ```groovy
+  RequirementUsage resolveSatisfiedRequirement(SatisfyRequirementUsage s) {
+      def r = s.getSatisfiedRequirement()
+      if (r != null && r != s) return r
+      return s.getOwnedTyping()?.collect { it.getType() }
+                              ?.find { it instanceof RequirementUsage }
+  }
+  Element resolveSatisfyingFeature(SatisfyRequirementUsage s) {
+      def f = s.getSatisfyingFeature()
+      return f != null ? f : s.getOwner()
+  }
+  ```
+  The second fallback (`getOwner()`) matches the existing pattern in
+  `scripts/RequirementSatisfyMatrixGraphics.groovy`.
 
-### SubjectMembership (FR-7)
-- `factory.createSubjectMembership()` works.
-- `subjM.setOwner(r7)` — membership is owned by the requirement.
-- `subjM.setMemberElement(p2)` — reference-only (no ownership transfer), correct for referencing a part.
-- `subjM.setOwnedSubjectParameter(p2)` — **steals ownership** of p2; avoid unless p2 is created fresh.
-- `r7.getSubjectParameter()` returns the `Usage` referenced by the membership.
+### SubjectMembership (FR-7) — caveat from iteration-1 testing
+- `factory.createSubjectMembership()` works; `subjM.setOwner(r7)` works.
+- **`subjM.setMemberElement(p2)` TRANSFERS OWNERSHIP** of p2 out of its original container (despite what the method name suggests). Runtime evidence: TF1's `ownedMember` list lost P2 after this call. Do NOT use `setMemberElement` to reference an element owned elsewhere.
+- `subjM.setOwnedSubjectParameter(p2)` also transfers ownership (method name is honest about this).
+- **Correct pattern (not yet verified)**: create a fresh `ReferenceUsage` inside the `SubjectMembership`, then use a `ReferenceSubsetting` on that `ReferenceUsage` pointing to the actual subject (p2). This keeps p2 in its original container.
+- For iteration 1 the fixture builder creates an **empty** SubjectMembership on R7; FR-7 is deferred until we verify the ReferenceSubsetting pattern.
 
 ### Project model root
 - For DST-native SysMLv2 projects: `project.getModel()`, `project.getPrimaryModel()`, `project.getModels()` all return null/empty.
