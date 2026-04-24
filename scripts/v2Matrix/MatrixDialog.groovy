@@ -32,11 +32,13 @@ loader.parseClass(new File(v2Dir, 'LibraryDetector.groovy'))
 loader.parseClass(new File(v2Dir, 'MatrixModel.groovy'))
 loader.parseClass(new File(v2Dir, 'MatrixCanvas.groovy'))
 loader.parseClass(new File(v2Dir, 'MatrixController.groovy'))
+loader.parseClass(new File(v2Dir, 'MatrixExporter.groovy'))
 def MatrixModelCls      = loader.loadClass('v2Matrix.MatrixModel')
 def MatrixCanvasCls     = loader.loadClass('v2Matrix.MatrixCanvas')
 def PaletteCls          = loader.loadClass('v2Matrix.Palette')
 def LegendPanelCls      = loader.loadClass('v2Matrix.LegendPanel')
 def MatrixControllerCls = loader.loadClass('v2Matrix.MatrixController')
+def MatrixExporterCls   = loader.loadClass('v2Matrix.MatrixExporter')
 
 // ---- Get scope from browser selection ---------------------------------------
 def app = Application.getInstance()
@@ -126,6 +128,7 @@ SwingUtilities.invokeLater {
         def paletteCombo = new JComboBox(PaletteCls.allNames().toArray(new String[0]))
         paletteCombo.setSelectedItem('Standard')
         def refreshBtn = new JButton('Refresh')
+        def exportBtn  = new JButton('Export…')
         def statusLabel = new JLabel(
             "${initialMatrix.rows.size()}r × ${initialMatrix.cols.size()}c · ${initialMatrix.cellCount()} cells")
 
@@ -135,6 +138,7 @@ SwingUtilities.invokeLater {
         controls.add(new JLabel('  Palette:'))
         controls.add(paletteCombo)
         controls.add(refreshBtn)
+        controls.add(exportBtn)
         controls.add(Box.createHorizontalStrut(16))
         controls.add(statusLabel)
 
@@ -168,6 +172,48 @@ SwingUtilities.invokeLater {
             it.addActionListener({ refresh() } as ActionListener)
         }
         refreshBtn.addActionListener({ refresh() } as ActionListener)
+
+        // --- Export action -------------------------------------------------
+        // Opens a JFileChooser with format chooser; delegates to MatrixExporter.
+        // Default filename = <scope>_matrix.<ext>, e.g. TF1_matrix.png.
+        exportBtn.addActionListener({
+            try {
+                def formats = ['PNG', 'SVG', 'HTML', 'CSV'] as String[]
+                def fmt = (String) JOptionPane.showInputDialog(
+                    dialog, 'Export format:', 'Export matrix',
+                    JOptionPane.PLAIN_MESSAGE, null, formats, 'PNG')
+                if (fmt == null) return
+
+                def defaultName = scope.getDeclaredName() + '_matrix.' + fmt.toLowerCase()
+                def chooser = new JFileChooser()
+                chooser.setDialogTitle('Export as ' + fmt)
+                chooser.setSelectedFile(new File(defaultName))
+                int choice = chooser.showSaveDialog(dialog)
+                if (choice != JFileChooser.APPROVE_OPTION) return
+
+                File target = chooser.getSelectedFile()
+                def matrix = controller?.matrix ?: initialMatrix
+                def palette = PaletteCls.byName(paletteCombo.getSelectedItem() as String)
+                boolean swap = swapCb.isSelected()
+
+                log.info("Export ${fmt} → ${target.absolutePath}")
+                switch (fmt) {
+                    case 'PNG':  MatrixExporterCls.exportPng(canvas, target); break
+                    case 'SVG':  MatrixExporterCls.exportSvg(matrix, palette, target, swap); break
+                    case 'HTML': MatrixExporterCls.exportHtml(matrix, palette, target, swap,
+                                    'v2Matrix — ' + scope.getDeclaredName()); break
+                    case 'CSV':  MatrixExporterCls.exportCsv(matrix, target); break
+                }
+                JOptionPane.showMessageDialog(dialog,
+                    "Exported ${fmt}:\n${target.absolutePath}",
+                    'Export complete', JOptionPane.INFORMATION_MESSAGE)
+            } catch (Throwable t) {
+                log.error('Export failed: ' + t.toString())
+                JOptionPane.showMessageDialog(dialog,
+                    "Export failed: ${t.message}", 'Error',
+                    JOptionPane.ERROR_MESSAGE)
+            }
+        } as ActionListener)
 
         // --- Layout: controls NORTH, canvas CENTER, legend EAST ---
         def content = new JPanel(new BorderLayout())
