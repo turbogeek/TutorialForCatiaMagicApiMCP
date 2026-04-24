@@ -31,10 +31,12 @@ def loader = new GroovyClassLoader(getClass().getClassLoader())
 loader.parseClass(new File(v2Dir, 'LibraryDetector.groovy'))
 loader.parseClass(new File(v2Dir, 'MatrixModel.groovy'))
 loader.parseClass(new File(v2Dir, 'MatrixCanvas.groovy'))
-def MatrixModelCls   = loader.loadClass('v2Matrix.MatrixModel')
-def MatrixCanvasCls  = loader.loadClass('v2Matrix.MatrixCanvas')
-def PaletteCls       = loader.loadClass('v2Matrix.Palette')
-def LegendPanelCls   = loader.loadClass('v2Matrix.LegendPanel')
+loader.parseClass(new File(v2Dir, 'MatrixController.groovy'))
+def MatrixModelCls      = loader.loadClass('v2Matrix.MatrixModel')
+def MatrixCanvasCls     = loader.loadClass('v2Matrix.MatrixCanvas')
+def PaletteCls          = loader.loadClass('v2Matrix.Palette')
+def LegendPanelCls      = loader.loadClass('v2Matrix.LegendPanel')
+def MatrixControllerCls = loader.loadClass('v2Matrix.MatrixController')
 
 // ---- Get scope from browser selection ---------------------------------------
 def app = Application.getInstance()
@@ -104,6 +106,15 @@ SwingUtilities.invokeLater {
         def dialog = new JDialog(app.getMainFrame(), 'v2Matrix — ' + scope.getDeclaredName(), false)
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE)
 
+        // MatrixController handles mouse interactions (FR-12). Created before
+        // the refresh closure so the closure can update controller.matrix.
+        def controller = MatrixControllerCls.newInstance()
+        controller.canvas = canvas
+        controller.matrix = initialMatrix
+        controller.project = project
+        controller.log = log
+        controller.owningDialog = dialog
+
         // --- Controls ---
         def controls = new JPanel()
         controls.setLayout(new FlowLayout(FlowLayout.LEFT, 8, 4))
@@ -147,6 +158,7 @@ SwingUtilities.invokeLater {
             legend.setAxesSwapped(swap)           // legend swatches match canvas
             legend.setShowImplied(impl && matrix.impliedCount() > 0)
             legend.setShowSubject(false) // no subject kind yet (deferred)
+            controller?.setMatrix(matrix)          // keep controller's matrix in sync
 
             statusLabel.setText(
                 "${matrix.rows.size()}r × ${matrix.cols.size()}c · ${matrix.cellCount()} cells" +
@@ -171,6 +183,11 @@ SwingUtilities.invokeLater {
                 log.info('Dialog closed — disposed')
             }
         })
+
+        // Wire the controller: refresh closure rebuilds matrix on every
+        // mutation (delete/create). It also re-applies palette and swap state.
+        controller.refreshCallback = { refresh() }
+        controller.attach()
 
         dialog.pack()
         Dimension pref = dialog.getSize()
