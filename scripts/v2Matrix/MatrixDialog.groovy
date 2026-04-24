@@ -33,12 +33,14 @@ loader.parseClass(new File(v2Dir, 'MatrixModel.groovy'))
 loader.parseClass(new File(v2Dir, 'MatrixCanvas.groovy'))
 loader.parseClass(new File(v2Dir, 'MatrixController.groovy'))
 loader.parseClass(new File(v2Dir, 'MatrixExporter.groovy'))
-def MatrixModelCls      = loader.loadClass('v2Matrix.MatrixModel')
-def MatrixCanvasCls     = loader.loadClass('v2Matrix.MatrixCanvas')
-def PaletteCls          = loader.loadClass('v2Matrix.Palette')
-def LegendPanelCls      = loader.loadClass('v2Matrix.LegendPanel')
-def MatrixControllerCls = loader.loadClass('v2Matrix.MatrixController')
-def MatrixExporterCls   = loader.loadClass('v2Matrix.MatrixExporter')
+loader.parseClass(new File(v2Dir, 'MatrixViewPersistence.groovy'))
+def MatrixModelCls         = loader.loadClass('v2Matrix.MatrixModel')
+def MatrixCanvasCls        = loader.loadClass('v2Matrix.MatrixCanvas')
+def PaletteCls             = loader.loadClass('v2Matrix.Palette')
+def LegendPanelCls         = loader.loadClass('v2Matrix.LegendPanel')
+def MatrixControllerCls    = loader.loadClass('v2Matrix.MatrixController')
+def MatrixExporterCls      = loader.loadClass('v2Matrix.MatrixExporter')
+def MatrixViewPersistCls   = loader.loadClass('v2Matrix.MatrixViewPersistence')
 
 // ---- Get scope from browser selection ---------------------------------------
 def app = Application.getInstance()
@@ -52,15 +54,28 @@ if (project == null) {
 def browser = app.getMainFrame().getBrowser()
 def selected = browser.getActiveTree()?.getSelectedNodes()
 Namespace scope = null
+Map loadedConfig = [:]
+def loadedView = null
+
+// FR-16: auto-load if selection is a v2Matrix_* ViewUsage.
 if (selected && selected.length > 0) {
     def obj = selected[0].getUserObject()
-    if (obj instanceof Namespace) {
+    if (MatrixViewPersistCls.isMatrixView(obj)) {
+        loadedView = obj
+        loadedConfig = MatrixViewPersistCls.load(obj)
+        // The view's owner is the matrix scope (we saved it under the same Namespace)
+        try {
+            def viewOwner = obj.getOwner()
+            if (viewOwner instanceof Namespace) scope = (Namespace) viewOwner
+        } catch (Exception e) { log.warn('View-owner resolution failed: ' + e.message) }
+        log.info("Auto-loading view '${obj.getDeclaredName()}' (${loadedConfig.size()} config entries)")
+    } else if (obj instanceof Namespace) {
         def name = ((Namespace) obj).getDeclaredName()
         if (name != null && !name.isEmpty()) scope = (Namespace) obj
     }
 }
 if (scope == null) {
-    def msg = 'Select a named Namespace (e.g. TF1) in the containment tree, then re-run.'
+    def msg = 'Select a named Namespace (e.g. TF1) or a v2Matrix_* view, then re-run.'
     log.error(msg)
     app.getGUILog().log('[v2Matrix] ERROR: ' + msg)
     return
@@ -93,7 +108,13 @@ def makeModel = { boolean swap, boolean showImplied, boolean excludeViewpoint ->
     mm
 }
 
-def initialModel = makeModel(false, false, false)
+// Initial configuration — either from auto-loaded view or defaults.
+boolean initSwap    = (loadedConfig['axesSwapped'] == true) || loadedConfig['axesSwapped'] == 'true'
+boolean initImplied = (loadedConfig['showImplied'] == true) || loadedConfig['showImplied'] == 'true'
+boolean initHideVp  = (loadedConfig['excludeViewpoint'] == true) || loadedConfig['excludeViewpoint'] == 'true'
+String  initPalette = (loadedConfig['paletteName'] as String) ?: 'Standard'
+
+def initialModel = makeModel(initSwap, initImplied, initHideVp)
 def initialMatrix = initialModel.build()
 log.info("Initial matrix: ${initialMatrix.rows.size()} rows × ${initialMatrix.cols.size()} cols, ${initialMatrix.cellCount()} cells")
 
@@ -122,13 +143,14 @@ SwingUtilities.invokeLater {
         controls.setLayout(new FlowLayout(FlowLayout.LEFT, 8, 4))
         controls.setBorder(new EmptyBorder(4, 8, 4, 8))
 
-        def swapCb = new JCheckBox('Swap axes', false)
-        def impliedCb = new JCheckBox('Show implied', false)
-        def hideVpCb = new JCheckBox('Hide ViewpointUsage', false)
+        def swapCb = new JCheckBox('Swap axes', initSwap)
+        def impliedCb = new JCheckBox('Show implied', initImplied)
+        def hideVpCb = new JCheckBox('Hide ViewpointUsage', initHideVp)
         def paletteCombo = new JComboBox(PaletteCls.allNames().toArray(new String[0]))
-        paletteCombo.setSelectedItem('Standard')
+        paletteCombo.setSelectedItem(initPalette)
         def refreshBtn = new JButton('Refresh')
         def exportBtn  = new JButton('Export…')
+        def saveViewBtn = new JButton('Save view')
         def statusLabel = new JLabel(
             "${initialMatrix.rows.size()}r × ${initialMatrix.cols.size()}c · ${initialMatrix.cellCount()} cells")
 
@@ -139,6 +161,7 @@ SwingUtilities.invokeLater {
         controls.add(paletteCombo)
         controls.add(refreshBtn)
         controls.add(exportBtn)
+        controls.add(saveViewBtn)
         controls.add(Box.createHorizontalStrut(16))
         controls.add(statusLabel)
 
@@ -223,6 +246,38 @@ SwingUtilities.invokeLater {
             ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED), BorderLayout.CENTER)
         content.add(legend, BorderLayout.EAST)
         dialog.setContentPane(content)
+
+        // --- Save view action (FR-15) --------------------------------------
+        saveViewBtn.addActionListener({
+            try {
+                def cfg = [
+                    axesSwapped:      swapCb.isSelected(),
+                    showImplied:      impliedCb.isSelected(),
+                    excludeViewpoint: hideVpCb.isSelected(),
+                    paletteName:      paletteCombo.getSelectedItem() as String,
+                    scopeId:          scope.getDeclaredName(),
+                    kind:             'SATISFY',
+                    rowType:          swapCb.isSelected()
+                                        ? 'com.dassault_systemes.modeler.sysml.model.sysml.RequirementUsage'
+                                        : 'com.dassault_systemes.modeler.sysml.model.sysml.PartUsage',
+                    colType:          swapCb.isSelected()
+                                        ? 'com.dassault_systemes.modeler.sysml.model.sysml.PartUsage'
+                                        : 'com.dassault_systemes.modeler.sysml.model.sysml.RequirementUsage',
+                ]
+                def view = MatrixViewPersistCls.save(scope, project, cfg)
+                def msg = "Saved as ViewUsage '${view?.getDeclaredName()}'\n" +
+                          "Location: under '${scope.getDeclaredName()}'\n" +
+                          "Re-open: select the view in the tree and relaunch MatrixDialog."
+                log.info("Saved view ${view?.getDeclaredName()} with ${cfg.size()} keys")
+                JOptionPane.showMessageDialog(dialog, msg, 'View saved',
+                    JOptionPane.INFORMATION_MESSAGE)
+            } catch (Throwable t) {
+                log.error('Save view failed: ' + t.toString())
+                JOptionPane.showMessageDialog(dialog,
+                    "Save failed: ${t.message}", 'Error',
+                    JOptionPane.ERROR_MESSAGE)
+            }
+        } as ActionListener)
 
         dialog.addWindowListener(new WindowAdapter() {
             @Override void windowClosed(WindowEvent e) {
