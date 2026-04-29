@@ -95,6 +95,7 @@ These are derived from the bundled best-practices data and the user's own `CLAUD
 
 10. **TDD loop** (`tdd-loop`). Commit current state → write/update test → implement → run tests + REST harness → inspect diagnostic logs → repeat. Cap at 10 red cycles before asking the user.
 
+11. **SysMLv2 Terminology**. In SysMLv2, we often use synonyms like "satisfy" when we mean `SatisfyRequirementUsage`, or "part" when we mean `PartUsage`. The SysMLv2 API is written explicitly in terms of the SysMLv2 metamodel, so be highly aware of the explicit use of "usage" and "definition". For example, use `SatisfyRequirementUsage` (with a `ReferenceSubsetting` setting the subsetted feature to the requirement) instead of `AllocationUsage` for satisfaction relationships.
 ## How to structure a response
 
 When the user asks you to write a script:

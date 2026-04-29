@@ -98,6 +98,27 @@ Add that automatic cross-check. Also, the MCP should return a proper error if th
 
 ---
 
+## Tutorial Progress: The Swimming Robot
+
+We have successfully completed the first automation tutorial: **The Swimming Robot**. This exercise validated the end-to-end pipeline from requirement definition to automated model generation and harness-based validation.
+
+### Key Milestones
+- **Script Generation**: An AI agent successfully authored a SysMLv2 Groovy script for REQ-1 and its satisfying architecture.
+- **Harness Execution**: The script was deployed and run via the `SysMLv2TestHarness` on port **8765**.
+- **Automated Validation**: The script's dedicated log verified the creation of 5+ elements with 100% accuracy.
+
+### Lessons Learned (Hard-won)
+- **SysMLv2 Literals**: Avoid `LiteralReal` (hallucination risk); use `LiteralRational` from the `kerml` package for real-number attributes.
+- **SysMLv2 Terminology**: Use terminology matching the metamodel (e.g. `SatisfyRequirementUsage`, `PartUsage`, `PartDefinition`). Link satisfaction via a `ReferenceSubsetting` owned by the `SatisfyRequirementUsage` rather than generic end chains.
+- **Package Ownership**: Put all elements into a dedicated `Package` using `Elements.setOwningMembership` rather than placing them in the root namespace.
+- **Factory Context**: Always instantiate `ElementsFactory` via `ElementsFactory.get(selectedNamespace)` to ensure proper containment.
+- **Port Clarity**: The environment's test harness uses port **8765** (restoring from common 8768 defaults).
+- **Logger Synchronization**: Keep `SysMLv2Logger.groovy` consistent across all project `scripts` directories to support the `(String, File)` constructor.
+
+Check the [TutorialOne folder](file:///e:/_Documents/git/TutorialForCatiaMagicApiMCP/TutorialOne) for the full notes, progress log, and the interactive HTML presentation.
+
+---
+
 # Appendix: Reference for the MCP that got built
 
 ## What you get
