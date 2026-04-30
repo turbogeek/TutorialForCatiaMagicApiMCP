@@ -177,6 +177,12 @@
             margin-top: 1.5rem;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            mermaid.initialize({ startOnLoad: true, theme: 'default' });
+        });
+    </script>
 </head>
 <body>
 
@@ -271,7 +277,54 @@ Act as a SysMLv2 modeling expert for the CATIA Magic Open API with expertise in 
             </div>
         </div>
 
-        <!-- Slide 9: Handling UI Exceptions -->
+        <!-- Slide 9: Architecture & Workflow -->
+        <div class="slide">
+            <h2>Architecture & Workflow</h2>
+            <div class="mermaid" style="background: white; border-radius: 8px; padding: 1rem; width: 90%; max-height: 60vh; overflow-y: auto;">
+                graph TD
+                %% Styling
+                classDef llm fill:#005386,stroke:#003b5c,stroke-width:2px,color:#fff,rx:5,ry:5
+                classDef mcp fill:#00A3E0,stroke:#0077a6,stroke-width:2px,color:#fff,rx:5,ry:5
+                classDef cameo fill:#10b981,stroke:#059669,stroke-width:2px,color:#fff,rx:5,ry:5
+                classDef action fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff,rx:5,ry:5
+
+                subgraph AI Workspace
+                    LLM["🤖 AI Assistant<br/>(Claude, Gemini, Antigravity)"]:::llm
+                    Config["⚙️ Workspace Config<br/>(.claude, .gemini, .antigravity)"]:::llm
+                    Skills["📚 Skill & Agent Files<br/>(Context & Rules)"]:::llm
+                end
+
+                subgraph MCP Integration Layer
+                    MCP["🔌 Model Context Protocol<br/>(MCP Server)"]:::mcp
+                    Scripts["💻 Commands & Scripts<br/>(Search, File System, Git)"]:::mcp
+                end
+
+                subgraph Cameo / MagicDraw
+                    API["📖 OpenAPI Docs<br/>(Javadoc, Guides)"]:::cameo
+                    Harness["⚙️ REST Test Harness<br/>(localhost:8765/run)"]:::cameo
+                    Tool["🛠️ Cameo Application"]:::cameo
+                end
+
+                %% Workflow Links
+                Config -.-> |Configures| LLM
+                User(("👤 User Prompt")) --> |Submits Prompt| LLM
+                LLM --> |Reads Context| Skills
+                
+                LLM --> |Uses Tools via| MCP
+                MCP --> |Executes| Scripts
+                MCP --> |Reads| API
+                
+                LLM --> |Generates Script & Triggers| Harness
+                Harness --> |Executes in| Tool
+                Harness -- "Error / Log output<br/>(Iteration Loop)" --> LLM:::action
+                
+                %% Emphasis on Iteration
+                linkStyle 8 stroke:#f59e0b,stroke-width:3px,stroke-dasharray: 5 5
+                linkStyle 9 stroke:#f59e0b,stroke-width:3px,stroke-dasharray: 5 5
+            </div>
+        </div>
+
+        <!-- Slide 10: Handling UI Exceptions -->
         <div class="slide">
             <h2 class="pain-text">When Exceptions Escape</h2>
             <p>If an error occurs inside a GUI thread (like <code>paintComponent</code>), MagicDraw intercepts it and displays the Internal Errors dialog.</p>
@@ -282,7 +335,7 @@ Act as a SysMLv2 modeling expert for the CATIA Magic Open API with expertise in 
             </div>
         </div>
 
-        <!-- Slide 10: Next Steps -->
+        <!-- Slide 11: Next Steps -->
         <div class="slide">
             <h1 style="font-size: 3.5rem;">The Sky is the Limit</h1>
             <p>Now that you can read, parse, and visualize the SysMLv2 model...</p>
@@ -290,7 +343,7 @@ Act as a SysMLv2 modeling expert for the CATIA Magic Open API with expertise in 
         </div>
     </div>
 
-    <div class="slide-number"><span id="current">1</span> / <span id="total">10</span></div>
+    <div class="slide-number"><span id="current">1</span> / <span id="total">11</span></div>
 
     <div class="controls">
         <button onclick="prevSlide()">Previous</button>
