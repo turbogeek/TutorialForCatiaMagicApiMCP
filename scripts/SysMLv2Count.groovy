@@ -1,6 +1,19 @@
 /**
  * SysMLv2 Element Counter Script for Cameo API
  * Counts all elements in the model by their type and displays a formatted table
+ *
+ * ======================================================================
+ * SysMLv2 Element Type Count Report
+ * ======================================================================
+ * Element Type                                             Count
+ * ----------------------------------------------------------------------
+ * Class                                                      145
+ * Block                                                       89
+ * Port                                                        34
+ * ...
+ * ----------------------------------------------------------------------
+ * TOTAL ELEMENTS                                          1,250
+ * ======================================================================
  */
 
 import com.nomagic.magicdraw.core.Application
