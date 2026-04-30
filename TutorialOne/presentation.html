@@ -7,14 +7,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #818cf8;
-            --secondary: #c084fc;
-            --bg: #0b1120;
-            --glass: rgba(0, 0, 0, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --text: #ffffff;
-            --error: #fb7185;
-            --success: #34d399;
+            --primary: #005386;
+            --secondary: #00A3E0;
+            --bg: #f8fafc;
+            --glass: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(0, 0, 0, 0.15);
+            --text: #1e293b;
+            --error: #ef4444;
+            --success: #10b981;
         }
 
         * {
@@ -28,8 +28,8 @@
             background-color: var(--bg);
             color: var(--text);
             overflow: hidden;
-            background: radial-gradient(circle at top right, #1e1b4b, #000000),
-                        radial-gradient(circle at bottom left, #312e81, #000000);
+            background: radial-gradient(circle at top right, #ffffff, #e2e8f0),
+                        radial-gradient(circle at bottom left, #f1f5f9, #cbd5e1);
             height: 100vh;
             display: flex;
             align-items: center;
@@ -62,7 +62,7 @@
             backdrop-filter: blur(25px);
             border-radius: 2rem;
             border: 2px solid var(--glass-border);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
             text-align: center;
         }
 
@@ -77,11 +77,11 @@
             font-size: 4.5rem;
             font-weight: 800;
             margin-bottom: 1.5rem;
-            background: linear-gradient(to right, #a5b4fc, #e879f9);
+            background: linear-gradient(to right, #005386, #00A3E0);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             line-height: 1.2;
-            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            text-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         h2 {
@@ -89,14 +89,14 @@
             color: var(--secondary);
             margin-bottom: 2rem;
             font-weight: 700;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
 
         p {
             font-size: 1.5rem;
             line-height: 1.6;
             max-width: 900px;
-            color: #f1f5f9;
+            color: #334155;
             margin-bottom: 1rem;
             font-weight: 500;
         }
@@ -104,7 +104,7 @@
         ul {
             text-align: left;
             font-size: 1.4rem;
-            color: #f8fafc;
+            color: #334155;
             max-width: 900px;
             margin: 0 auto;
             font-weight: 500;
@@ -115,7 +115,7 @@
         }
 
         .code-block {
-            background: #020617;
+            background: #f1f5f9;
             padding: 1.5rem;
             border-radius: 1rem;
             font-family: 'Fira Code', monospace;
@@ -126,7 +126,7 @@
             border: 2px solid var(--glass-border);
             width: 100%;
             max-width: 1000px;
-            color: #a5b4fc;
+            color: #0f172a;
         }
 
         .controls {
@@ -139,9 +139,9 @@
         }
 
         button {
-            background: rgba(0, 0, 0, 0.7);
-            border: 2px solid var(--glass-border);
-            color: white;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid var(--primary);
+            color: var(--primary);
             padding: 1rem 1.5rem;
             border-radius: 0.5rem;
             cursor: pointer;
@@ -154,7 +154,7 @@
         button:hover {
             background: var(--primary);
             border-color: var(--primary);
-            color: #000;
+            color: #ffffff;
         }
 
         .slide-number {
@@ -231,7 +231,7 @@
             max-height: 55vh;
             border-radius: 8px;
             border: 2px solid var(--glass-border);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
             margin-top: 1.5rem;
         }
     </style>
