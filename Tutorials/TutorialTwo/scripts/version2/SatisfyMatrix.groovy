@@ -26,15 +26,23 @@ import java.util.ArrayList
 // Version 2 includes robust error handling on the EDT and improved visualizations.
 // -----------------------------------------------------------------------------------
 
-String scriptDir = "E:\\_Documents\\git\\TutorialForCatiaMagicApiMCP\\Tutorials\\TutorialTwo\\scripts"
-// We assume SysMLv2Logger.groovy is somewhere relative or we can find it. 
-// The user had: String scriptDir = "E:\\_Documents\\git\\SysMLv2ClientAPI\\scripts"
-// I will use that same path to find SysMLv2Logger.groovy
-File loggerFile = new File("E:\\_Documents\\git\\SysMLv2ClientAPI\\scripts", "SysMLv2Logger.groovy")
+// Assume SysMLv2Logger.groovy is in a relative path "scripts", or prompt user
+File loggerFile = new File("scripts", "SysMLv2Logger.groovy")
+if (!loggerFile.exists()) {
+    JFileChooser chooser = new JFileChooser()
+    chooser.setDialogTitle("Select SysMLv2Logger.groovy")
+    if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+        loggerFile = chooser.getSelectedFile()
+    } else {
+        println("User canceled logger selection")
+        return
+    }
+}
 def SysMLv2Logger = new GroovyClassLoader(getClass().getClassLoader()).parseClass(loggerFile)
 
-// Updated log target based on prompt
-File runLog = new File("E:\\_Documents\\git\\TutorialForCatiaMagicApiMCP\\Tutorials\\TutorialTwo\\ver2\\logs", "SatisfyMatrix.log")
+// Updated log target relative to the chosen logger file or user home
+File logDir = loggerFile.getParentFile() != null ? new File(loggerFile.getParentFile().getParentFile(), "logs") : new File(System.getProperty("user.dir"), "logs")
+File runLog = new File(logDir, "SatisfyMatrix.log")
 runLog.getParentFile().mkdirs()
 def logger = SysMLv2Logger.newInstance("SatisfyMatrixGUI", runLog)
 

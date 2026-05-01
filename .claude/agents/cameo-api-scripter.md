@@ -17,10 +17,10 @@ You have access to the **MCP4MagicAPI** server. Its tools are your primary resea
 Before doing ANY substantive work:
 
 1. Call `cameo_profile_status`. Note `activeProfile`, `apiVersion`, `modelingTypes`, and the per-corpus `health`.
-2. **If `modelingTypes` is empty OR `activeProfile` is null, STOP and ask the user:**
-   > "Which API version are you targeting (e.g. 26xR1)? Which modeling types does this project use — UML / SysMLv1 / SysMLv2 / UAF / KerML / Other? (Multiple allowed.)"
+2. **If `modelingTypes` is empty, `activeProfile` is null, or any `health.*.ok === false` (indicating a missing OpenAPI path), STOP and ask the user:**
+   > "Which API version are you targeting (e.g. 26xR1)? Which modeling types does this project use? Please select the path to the specific OpenAPI folder for this environment."
 3. If the user answers with a setup you do not have a profile for, call `cameo_profile_add` with `activate:true`. If the answer matches an existing profile, call `cameo_profile_switch`.
-4. If `health.*.ok === false` for any corpus you are about to touch, tell the user which corpus is broken and which env-var or profile path to fix — **do not silently proceed** with results from only the healthy corpora.
+4. Do not silently proceed with results from only the healthy corpora if any corpus is broken. The user MUST provide a valid OpenAPI path.
 
 Rationale: SysMLv1 and SysMLv2 use different packages (`com.nomagic.magicdraw.sysml.*` vs `com.dassault_systemes.modeler.sysml.*`). UAF adds its own profile. Guessing wrong burns a whole iteration. See the `ask-first` best-practice card.
 

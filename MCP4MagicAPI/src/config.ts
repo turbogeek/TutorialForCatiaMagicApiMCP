@@ -32,10 +32,9 @@ export interface CameoPaths {
   activeProfileName: string | null;
 }
 
-const DEFAULT_JAVADOC =
-  "E:\\Magic SW\\MCSE26xR1_4_2\\openapi\\docs\\md-javadoc-2026.1.0-485-c01d52da-javadoc";
-const DEFAULT_GUIDE = "E:\\Magic SW\\MCSE26xR1_4_2\\openapi\\guide\\guide";
-const DEFAULT_EXAMPLES = "E:\\Magic SW\\MCSE26xR1_4_2\\openapi\\examples";
+const DEFAULT_JAVADOC = "";
+const DEFAULT_GUIDE = "";
+const DEFAULT_EXAMPLES = "";
 const DEFAULT_VERSION = "26xR1";
 
 export async function loadConfig(): Promise<CameoPaths> {
