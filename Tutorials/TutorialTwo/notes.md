@@ -8,7 +8,7 @@ This tutorial will guide you through the process of using Cameo API with MCP to 
 
 ### But why?
 
-This is to create a real extention of the tool. Very often we want more controls, more features, differing rendering, or even corporate branding. But there are a lot of reasons to extend the capabilities of the base tool.
+This is to create a real extension of the tool. Very often we want more controls, more features, differing rendering, or even corporate branding. But there are a lot of reasons to extend the capabilities of the base tool.
 
 - Custom visualizations for specific standards.
 - Custom metrics.
@@ -17,7 +17,7 @@ This is to create a real extention of the tool. Very often we want more controls
 - Extensions for custom profiles
 - Custom integrations with other tools, for example Jira, Doors, Jama, Codebeamer, etc
 - Analyze the model.
-- Look for errors or violatiosn of standards
+- Look for errors or violations of standards
 - Integrate AI tools directly into the tool to have it do more than its developers intended.
 
 ### Sounds like a job for an AI assistant?
@@ -26,13 +26,13 @@ Yes it does.
 
 ### But, Can we trust it?
 
-In this case, we need to be more specific and think like a user as well as a user interface designer, a systems engineer, and a programmer. Just because you can imagine a new capability does not mean you know anything about a good interface design, plus understanding the Cameo API is a whole nother issue.
+In this case, we need to be more specific and think like a user as well as a user interface designer, a systems engineer, and a programmer. Just because you can imagine a new capability does not mean you know anything about a good interface design, plus understanding the Cameo API is a whole other issue.
 
 ## extending our toolbox from the last tutorial
 
 ### The need for more specificity
 
-We need to create requirements for our tool extention in the same way as a real project.  How do we create a Satisfy Matrix dialog? What are its parts? How does it function? Can we change the look and feel of the dialog?  Can we use it to edit the nmodel or refresh when the model changes? Can we slip the axis? How do we find the elements?Can we save the config and reload it?
+We need to create requirements for our tool extension in the same way as a real project.  How do we create a Satisfy Matrix dialog? What are its parts? How does it function? Can we change the look and feel of the dialog?  Can we use it to edit the model or refresh when the model changes? Can we flip the axis? How do we find the elements? Can we save the config and reload it?
 
 The question: What should we do?  We should create an tool that we can use over and over, and which can be a template for creating other tools.  It should also be an example of the things we should watch out for.  
 
@@ -65,7 +65,7 @@ Use the following refined prompt to guide an AI agent (like the `cameo-api-scrip
 
 ### The Prompt to create the Groovy script
 
-```PROMT
+```markdown
 Act as a SysMLv2 modeling expert for the CATIA Magic Open API with expertise in the Groovy Language, Java, the SysMLv2 standard, and the Cameo API. Your task is to develop, test, and validate a Groovy script that will show a Satisfy matrix with the given requirements and architecture in this file: "Tutorials\TutorialTwo\requirements.md". Put the new scripts into ./Tutorials/TutorialTwo/scripts/version<version_number> folder, where <version_number> is the version number of the script.  Here are some important things to keep in mind when writing your scripts:
 
 - Wrap all model changes in a SessionManager transaction (if mutating the model, though the matrix is read-only).
@@ -95,10 +95,10 @@ There are known knowns. These are things we know that we know. There are known u
 
 Donald Rumsfeld
 
-> [!IMPORTANT}
+> [!IMPORTANT]
 > When the LLM makes mistakes (or you do):
-> -Change the requirements and or the plan (the LLM can help)
-> -Change the  skill/agent files when there are hallucinations (the LLM can help here too)  
+> - Change the requirements and or the plan (the LLM can help)
+> - Change the skill/agent files when there are hallucinations (the LLM can help here too)  
 >
 
 ### iterate to complete and test the script
@@ -114,7 +114,7 @@ Follow these steps to replicate the AI's environment:
 
 ## TODOs
 
-- [ ] Finalize tutorial script and correct any markown errors or spelling mistakes.
+- [ ] Finalize tutorial script and correct any markdown errors or spelling mistakes.
 - [ ] Export HTML presentation to PowerPoint (using Pandoc).
 - [ ] Test with local Cameo instance.
 - [ ] Improve the script and presentation.

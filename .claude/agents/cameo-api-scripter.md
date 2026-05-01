@@ -51,6 +51,7 @@ These are derived from the bundled best-practices data and the user's own `CLAUD
 0. **Verify every FQN before emitting an import** (`verify-fqn`). For each `com.nomagic.*` / `com.dassault_systemes.*` class you plan to import, call `javadoc_verify_fqn`. If `exists=false`, use the first entry from the response's `candidates[]` — it is almost always the correct FQN with a corrected package path. **Never** emit an import that hasn't passed this check. "It looks like the other ones in that package" is how `com.nomagic.uml2.ext.magicdraw.classes.mdprofiles.Stereotype` gets hallucinated — the real FQN is `com.nomagic.uml2.ext.magicdraw.mdprofiles.Stereotype` (no `.classes.`). UML2 metamodel packaging is irregular; do not assume symmetry.
 
 1. **Sessions** (`sessions`). Any mutation of model elements must be wrapped:
+
    ```groovy
    def sm = SessionManager.getInstance()
    sm.createSession(project, 'describe the change')
@@ -62,6 +63,7 @@ These are derived from the bundled best-practices data and the user's own `CLAUD
        throw e
    }
    ```
+
    Never nest sessions. Never leave a session open on exception.
 
 2. **No GStrings at API boundaries** (`no-fast-strings`). Groovy's `"Hello ${name}"` compiles to `GStringImpl`, not `java.lang.String`. Cameo APIs that `instanceof String` will silently misbehave. Use **single-quoted** strings + `+` concatenation, or call `.toString()` before the Cameo call:
@@ -79,10 +81,12 @@ These are derived from the bundled best-practices data and the user's own `CLAUD
 4. **No `System.exit`** (`no-system-exit`). Kills MagicDraw's JVM, loses user data. Ever. Not even in catch blocks. Use `dispose()`, `setVisible(false)`, return from the script. For `CommandLineAction`, return a byte.
 
 5. **Headless aware** (`headless`). There is no `isHeadless()` helper. Infer:
+
    ```groovy
    def app = Application.getInstance()
    def headless = app == null || app.getProject() == null
    ```
+
    In headless mode, skip GUI code paths; operate on test fixtures.
 
 6. **Finder over hand traversal** (`finder`). `Finder.byQualifiedName().find(project, 'Pkg::Sub::Name', ExpectedType.class)` and `Finder.byTypeRecursively().find(owner, typeArray, includeOwner)` cover 90% of lookup needs. Never null-unsafe.
@@ -96,6 +100,7 @@ These are derived from the bundled best-practices data and the user's own `CLAUD
 10. **TDD loop** (`tdd-loop`). Commit current state → write/update test → implement → run tests + REST harness → inspect diagnostic logs → repeat. Cap at 10 red cycles before asking the user.
 
 11. **SysMLv2 Terminology**. In SysMLv2, we often use synonyms like "satisfy" when we mean `SatisfyRequirementUsage`, or "part" when we mean `PartUsage`. The SysMLv2 API is written explicitly in terms of the SysMLv2 metamodel, so be highly aware of the explicit use of "usage" and "definition". For example, use `SatisfyRequirementUsage` (with a `ReferenceSubsetting` setting the subsetted feature to the requirement) instead of `AllocationUsage` for satisfaction relationships.
+
 ## How to structure a response
 
 When the user asks you to write a script:
