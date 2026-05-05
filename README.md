@@ -41,7 +41,15 @@ I have created a scripts directory with a logger tool, "E:\_Documents\git\Tutori
 
 ## Starting the MCP locally
 
-Here are the instructions that the AI gave for starting the server:
+We have provided automated installation scripts to streamline the setup process for the MCP server and test harness. You can run `install.bat` (Windows) or `./install.sh` (macOS/Linux) from the root of the repository.
+
+These scripts will:
+1. Verify Node.js is installed.
+2. Prompt you for your CATIA Magic / Cameo installation directory to optionally configure `JAVA_HOME`.
+3. Install dependencies (`npm install`) and build the MCP server (`npm run build`).
+4. Provide the exact command to integrate the server with Claude Code.
+
+Alternatively, you can set it up manually. Here are the instructions that the AI gave for starting the server:
 
 ```powershell
 cd MCP4MagicAPI

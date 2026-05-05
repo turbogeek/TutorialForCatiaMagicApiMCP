@@ -49,18 +49,10 @@ There are script in the folder, "test harness", which will provide the LLM with 
 
 ### The "Swimming Robot" Automation Prompt
 
-Use the following refined prompt to guide an AI agent (like the `cameo-api-scripter`) through the generation and validation of the tutorial model. This prompt incorporates hard-won lessons about the SysMLv2 API:
 
 ```text
-Act as a SysMLv2 modeling expert for the CATIA Magic Open API. Your task is to develop, test, and validate a Groovy script that generates a "Swimming Robot" requirement and its satisfying architecture.
+Act as a SysMLv2 modeling expert for the CATIA Magic Open API with expertise in theGroovy Language, Java, the SysMLv2 standard, and the Cameo API. Your task is to develop, test, and validate a Groovy script that will show a Satisfy matrix with the given requirements and architecture in this file: "TutorialOne\TutorialTwo\requirements.md".
 
-### Model Requirements (SysMLv2):
-1. Resolve the selected namespace and create a new Package called "Swimming Robot" within it. All subsequent elements MUST be created inside this new package.
-2. Create the Requirement "REQ-1" for a "Swimming Robot" (owned by the new package) with documentation: "The robot shall be able to swim in a pool."
-3. Create a Part Definition "Swimming Robot" (owned by the new package).
-4. Create a Part Usage "robot1" typed by the "Swimming Robot" definition (owned by the new package).
-5. Create an Attribute Usage "cost" under "robot1" with type ScalarValue::Real and a default value of 500.0 (use LiteralRational).
-6. Create a `SatisfyRequirementUsage` as a feature of the "robot1" usage. This satisfy usage MUST reference "REQ-1" as its satisfied requirement by creating a `ReferenceSubsetting` where the subsetted feature is the requirement, and subsetting feature is the satisfy usage, with the owner of the subsetting being the satisfy usage.
 
 ### Execution Requirements:
 - Wrap all model changes in a SessionManager transaction.
@@ -80,12 +72,23 @@ Act as a SysMLv2 modeling expert for the CATIA Magic Open API. Your task is to d
 > [!WARNING]
 > Remember, the LLM is not perfect and will make mistakes.  Be prepared to correct it and guide it as needed.  It is not a magic bullet.
 >
-### iterate to complete and test the script
 
 ## A quote
 
-“You probably don’t want to change the meaning of true halfway through your program (except perhaps if you’re a politician).”
-― Dave Thomas, Programming Ruby 1.9 & 2.0
+There are known knowns. These are things we know that we know. There are known unknowns. That is to say, there are things that we know we don't know. But there are also unknown unknowns. There are things we don't know we don't know.
+
+Donald Rumsfeld
+
+
+> [!IMPORTANT}
+> When the LLM makes mistakes (or you do):
+> -Change the requirements and or the plan 
+> -Change the  skill/agent files when there are hallucination  
+>
+
+
+### iterate to complete and test the script
+
 
 ## Project Setup
 
@@ -107,7 +110,7 @@ Act as a SysMLv2 modeling expert for the CATIA Magic Open API. Your task is to d
 
 ## TODOs
 
-- [ ] Finalize tutorial script.
+- [ ] Finalize tutorial script and correct any markown errors or spelling mistakes.
 - [ ] Export HTML presentation to PowerPoint (using Pandoc).
 - [ ] Test with local Cameo instance.
 - [ ] Improve the script and presentation.
