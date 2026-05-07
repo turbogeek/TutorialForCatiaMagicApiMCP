@@ -184,10 +184,10 @@ package Drone {
                 doc /* The fly-hunting drone as a logical part; aggregates all subsystems.*/
                 ref part FlightController {
                     doc /* Runs flight control loops, path planning, telemetry.*/
-                    ref satisfy requirement s_flightCtl_PatrolArea ::> Requirements::Functional::R_PatrolArea;
-                    ref satisfy requirement s_flightCtl_HoverAccuracy ::> Requirements::Functional::R_HoverAccuracy;
-                    ref satisfy requirement s_flightCtl_MaxPatrolArea ::> Requirements::Performance::R_MaxPatrolArea;
-                    ref satisfy requirement s_flightCtl_PositioningAcc ::> Requirements::Performance::R_PositioningAcc;
+                    satisfy Requirements::Functional::R_PatrolArea;
+                    satisfy Requirements::Functional::R_HoverAccuracy;
+                    satisfy Requirements::Performance::R_MaxPatrolArea;
+                    satisfy Requirements::Performance::R_PositioningAcc;
                 }
                 ref part PropulsionSystem {
                     doc /* 4 motor+propeller assemblies; thrust and yaw control.*/
@@ -202,7 +202,7 @@ package Drone {
                     ref part ESC_Board {
                         doc /* Electronic speed controller board.*/
                     }
-                    ref satisfy requirement s_propulsion_PropellerFailure ::> Requirements::CornerCases::R_PropellerFailure;
+                    satisfy Requirements::CornerCases::R_PropellerFailure;
                 }
                 ref part PowerSystem {
                     doc /* Battery, power management, recharge interface.*/
@@ -221,10 +221,10 @@ package Drone {
                     ref part ChargePort {
                         doc /* Dock-based contactless or pin charging interface.*/
                     }
-                    ref satisfy requirement s_power_FlightTime ::> Requirements::Performance::R_FlightTime;
-                    ref satisfy requirement s_power_RechargeTime ::> Requirements::Performance::R_RechargeTime;
-                    ref satisfy requirement s_power_LowBatteryRTB ::> Requirements::Safety::R_LowBatteryRTB;
-                    ref satisfy requirement s_power_TempLimit ::> Requirements::CornerCases::R_TempLimit;
+                    satisfy Requirements::Performance::R_FlightTime;
+                    satisfy Requirements::Performance::R_RechargeTime;
+                    satisfy Requirements::Safety::R_LowBatteryRTB;
+                    satisfy Requirements::CornerCases::R_TempLimit;
                 }
                 ref part VisionSystem {
                     doc /* Camera + image-processing pipeline for detection.*/
@@ -237,11 +237,11 @@ package Drone {
                     ref part ImageProcessor {
                         doc /* Preprocessing: deinterlace, stabilize, threshold.*/
                     }
-                    ref satisfy requirement s_vision_DetectFly ::> Requirements::Functional::R_DetectFly;
-                    ref satisfy requirement s_vision_TrackFly ::> Requirements::Functional::R_TrackFly;
-                    ref satisfy requirement s_vision_MultiTarget ::> Requirements::Functional::R_MultiTarget;
-                    ref satisfy requirement s_vision_ResponseTime ::> Requirements::Performance::R_ResponseTime;
-                    ref satisfy requirement s_vision_Darkness ::> Requirements::CornerCases::R_Darkness;
+                    satisfy Requirements::Functional::R_DetectFly;
+                    satisfy Requirements::Functional::R_TrackFly;
+                    satisfy Requirements::Functional::R_MultiTarget;
+                    satisfy Requirements::Performance::R_ResponseTime;
+                    satisfy Requirements::CornerCases::R_Darkness;
                 }
                 ref part LaserTargetingSystem {
                     doc /* Laser, gimbal, range-finder; eye-safe default.*/
@@ -263,11 +263,11 @@ package Drone {
                     ref part LaserRangeFinder {
                         doc /* Time-of-flight rangefinder for target distance.*/
                     }
-                    ref satisfy requirement s_laser_EliminateFly ::> Requirements::Functional::R_EliminateFly;
-                    ref satisfy requirement s_laser_LaserRange ::> Requirements::Performance::R_LaserRange;
-                    ref satisfy requirement s_laser_EyeSafe ::> Requirements::Safety::R_EyeSafeLaser;
-                    ref satisfy requirement s_laser_DisarmOnLand ::> Requirements::Safety::R_DisarmOnLand;
-                    ref satisfy requirement s_laser_SurfaceReflect ::> Requirements::CornerCases::R_SurfaceReflect;
+                    satisfy Requirements::Functional::R_EliminateFly;
+                    satisfy Requirements::Performance::R_LaserRange;
+                    satisfy Requirements::Safety::R_EyeSafeLaser;
+                    satisfy Requirements::Safety::R_DisarmOnLand;
+                    satisfy Requirements::CornerCases::R_SurfaceReflect;
                 }
                 ref part SafetySystem {
                     doc /* Human/obstacle detection, geofence, emergency stop.*/
@@ -283,13 +283,13 @@ package Drone {
                     ref part GeofenceModule {
                         doc /* Compares current position to configured boundary.*/
                     }
-                    ref satisfy requirement s_safety_KillSwitch ::> Requirements::Functional::R_KillSwitch;
-                    ref satisfy requirement s_safety_HumanDetection ::> Requirements::Safety::R_HumanDetection;
-                    ref satisfy requirement s_safety_ObstacleDistance ::> Requirements::Safety::R_ObstacleDistance;
-                    ref satisfy requirement s_safety_Geofence ::> Requirements::Safety::R_Geofence;
-                    ref satisfy requirement s_safety_WindLimit ::> Requirements::Safety::R_WindLimit;
-                    ref satisfy requirement s_safety_SwarmConflict ::> Requirements::CornerCases::R_SwarmConflict;
-                    ref satisfy requirement s_safety_UnresponsiveOp ::> Requirements::CornerCases::R_UnresponsiveOp;
+                    satisfy Requirements::Functional::R_KillSwitch;
+                    satisfy Requirements::Safety::R_HumanDetection;
+                    satisfy Requirements::Safety::R_ObstacleDistance;
+                    satisfy Requirements::Safety::R_Geofence;
+                    satisfy Requirements::Safety::R_WindLimit;
+                    satisfy Requirements::CornerCases::R_SwarmConflict;
+                    satisfy Requirements::CornerCases::R_UnresponsiveOp;
                 }
                 ref part CommunicationSystem {
                     doc /* Radio link to operator; GPS receiver.*/
@@ -299,8 +299,8 @@ package Drone {
                     ref part GPSReceiver {
                         doc /* GNSS receiver — disabled indoors.*/
                     }
-                    ref satisfy requirement s_comms_ConfigArea ::> Requirements::Functional::R_ConfigArea;
-                    ref satisfy requirement s_comms_GPSLoss ::> Requirements::CornerCases::R_GPSLoss;
+                    satisfy Requirements::Functional::R_ConfigArea;
+                    satisfy Requirements::CornerCases::R_GPSLoss;
                 }
                 ref part ChassisFrame {
                     doc /* Structural frame, mounting points, landing gear.*/
