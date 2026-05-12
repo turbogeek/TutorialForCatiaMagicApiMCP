@@ -45,13 +45,11 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
 
 // ---- Load the logger ------------------------------------------------------
-String scriptDir = 'C:\\Users\\Administrator\\Documents\\GitHub\\TutorialForCatiaMagicApiMCP\\test harness'
+String githubDir = new File(System.getProperty("user.home"), "Documents/GitHub").getAbsolutePath()
+String scriptDir = new File(githubDir, "TutorialForCatiaMagicApiMCP/test harness").getAbsolutePath()
 File loggerFile = new File(scriptDir, 'SysMLv2Logger.groovy')
 def LoggerClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(loggerFile)
-File harnessLog = new File(
-    'C:\\Users\\Administrator\\Documents\\LabOutput\\logs',
-    'test-harness.log'
-)
+File harnessLog = new File(githubDir, "MBSE-AI-Lab/LabOutputs/logs/test-harness.log")
 def logger = LoggerClass.newInstance('TestHarness', harnessLog)
 logger.info('=== Test harness starting ===')
 
