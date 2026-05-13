@@ -15,6 +15,7 @@ Act as a SysMLv2 modeling expert for the CATIA Magic Open API with expertise in 
 - ONLY use the `ElementsFactory.get(namespace)` and avoid `LiteralReal`. Use `LiteralRational` for attribute defaults to prevent type mismatch errors.
 - Optimize the rendering loop and data structures (like pre-calculating implied relationships) to ensure GUI repaints remain highly performant for large matrices.
 - Ensure visual indicators for BOTH direct and implied relationships are arrows drawn at a 45-degree angle pointing up-right, differentiated by color.
+- **CRITICAL**: The script must detect when the selected element(s) in the containment tree change. When a new `Namespace` element is selected, automatically clear the old data, re-run the analysis from the newly selected element as the root context, and dynamically repaint the Satisfy Matrix GUI with the updated information. Ensure you attach a `TreeSelectionListener` to the browser's active tree, execute UI updates on the Event Dispatch Thread (`SwingUtilities.invokeLater`), and unregister the listener when the dialog closes to prevent memory leaks.
 
 ## Validation Loop
 
