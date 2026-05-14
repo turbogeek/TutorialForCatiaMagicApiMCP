@@ -43,15 +43,206 @@ import java.net.InetSocketAddress
 import java.nio.charset.StandardCharsets
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
+import javax.swing.*
+import java.awt.GridBagLayout
+import java.awt.GridBagConstraints
+import java.awt.Insets
+import java.awt.event.*
+
+// ---- Harness configuration UI & Manager ------------------------------------
+class ConfigManager {
+    static File getConfigFile() {
+        new File(System.getProperty("user.home"), ".turbogeek_test_harness/config.json")
+    }
+
+    static Map load() {
+        File f = getConfigFile()
+        if (f.exists()) {
+            try { return Jzon.decode(f.getText('UTF-8')) as Map } catch (Exception e) {}
+        }
+        return [harnessPath: '', projectPath: '', logPath: '', guiLogLevel: 'WARN']
+    }
+
+    static void save(Map config) {
+        File f = getConfigFile()
+        f.getParentFile()?.mkdirs()
+        f.write(Jzon.encode(config), 'UTF-8')
+    }
+}
+
+class HarnessConfigDialog extends JFrame {
+    JTextField harnessPathField = new JTextField(40)
+    JTextField projectPathField = new JTextField(40)
+    JTextField logPathField = new JTextField(40)
+    JComboBox<String> guiLogLevelCombo = new JComboBox<>(["INFO", "WARN", "ERROR", "NONE"] as String[])
+    JTextArea endpointLogArea = new JTextArea(10, 50)
+    Runnable onSave
+    
+    HarnessConfigDialog(Runnable onSave) {
+        super("Test Harness Configuration")
+        this.onSave = onSave
+        setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE)
+        setAlwaysOnTop(true)
+        setPreferredSize(new java.awt.Dimension(600, 450))
+        
+        endpointLogArea.setEditable(false)
+        endpointLogArea.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 12))
+        
+        def panel = new JPanel(new GridBagLayout())
+        def c = new GridBagConstraints()
+        c.insets = new Insets(5, 5, 5, 5)
+        c.fill = GridBagConstraints.HORIZONTAL
+        
+        int row = 0
+        
+        c.gridx = 0; c.gridy = row; panel.add(new JLabel("Harness Path:"), c)
+        c.gridx = 1; c.gridy = row; c.weightx = 1.0; panel.add(harnessPathField, c)
+        c.gridx = 2; c.gridy = row; c.weightx = 0.0; panel.add(createBrowseButton(harnessPathField), c)
+        row++
+        
+        c.gridx = 0; c.gridy = row; panel.add(new JLabel("Project Path:"), c)
+        c.gridx = 1; c.gridy = row; c.weightx = 1.0; panel.add(projectPathField, c)
+        c.gridx = 2; c.gridy = row; c.weightx = 0.0; panel.add(createBrowseButton(projectPathField), c)
+        row++
+        
+        c.gridx = 0; c.gridy = row; panel.add(new JLabel("Log Path:"), c)
+        c.gridx = 1; c.gridy = row; c.weightx = 1.0; panel.add(logPathField, c)
+        c.gridx = 2; c.gridy = row; c.weightx = 0.0; panel.add(createBrowseButton(logPathField), c)
+        row++
+        
+        c.gridx = 0; c.gridy = row; panel.add(new JLabel("GUI Log Level:"), c)
+        c.gridx = 1; c.gridy = row; c.gridwidth = 2; panel.add(guiLogLevelCombo, c)
+        row++
+        
+        def saveBtn = new JButton("Save & Apply")
+        saveBtn.addActionListener({ e -> saveAction() } as ActionListener)
+        
+        c.gridx = 0; c.gridy = row; c.gridwidth = 3; c.anchor = GridBagConstraints.CENTER
+        c.fill = GridBagConstraints.NONE
+        panel.add(saveBtn, c)
+        row++
+        
+        c.gridx = 0; c.gridy = row; c.gridwidth = 3; c.anchor = GridBagConstraints.WEST
+        c.fill = GridBagConstraints.BOTH
+        c.weighty = 1.0
+        panel.add(new JScrollPane(endpointLogArea), c)
+        
+        add(panel)
+        pack()
+        setLocationRelativeTo(null)
+    }
+    
+    private JButton createBrowseButton(JTextField field) {
+        def btn = new JButton("Browse...")
+        btn.addActionListener({ e ->
+            def chooser = new JFileChooser()
+            chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
+            if (field.text) chooser.setCurrentDirectory(new File(field.text))
+            if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+                field.text = chooser.getSelectedFile().getAbsolutePath()
+            }
+        } as ActionListener)
+        return btn
+    }
+    
+    void loadFromConfig() {
+        def cfg = ConfigManager.load()
+        harnessPathField.text = cfg.harnessPath ?: ''
+        projectPathField.text = cfg.projectPath ?: ''
+        logPathField.text = cfg.logPath ?: ''
+        if (cfg.guiLogLevel) guiLogLevelCombo.setSelectedItem(cfg.guiLogLevel)
+    }
+    
+    void saveAction() {
+        def cfg = [
+            harnessPath: harnessPathField.text,
+            projectPath: projectPathField.text,
+            logPath: logPathField.text,
+            guiLogLevel: (String) guiLogLevelCombo.getSelectedItem()
+        ]
+        ConfigManager.save(cfg)
+        if (onSave) onSave.run()
+    }
+    
+    void appendLog(String message) {
+        SwingUtilities.invokeLater({
+            def ts = new java.text.SimpleDateFormat('HH:mm:ss.SSS').format(new Date())
+            endpointLogArea.append("[" + ts + "] " + message + "\n")
+            endpointLogArea.setCaretPosition(endpointLogArea.getDocument().getLength())
+        } as Runnable)
+    }
+}
+
+// ---- Global config state & Dialog -------------------------------------------
+def currentConfig = ConfigManager.load()
+HarnessConfigDialog configDialog = null
 
 // ---- Load the logger ------------------------------------------------------
-String githubDir = new File(System.getProperty("user.home"), "Documents/GitHub").getAbsolutePath()
-String scriptDir = new File(githubDir, "TutorialForCatiaMagicApiMCP/test harness").getAbsolutePath()
-File loggerFile = new File(scriptDir, 'SysMLv2Logger.groovy')
-def LoggerClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(loggerFile)
-File harnessLog = new File(githubDir, "MBSE-AI-Lab/LabOutputs/logs/test-harness.log")
-def logger = LoggerClass.newInstance('TestHarness', harnessLog)
-logger.info('=== Test harness starting ===')
+def logger = null
+Runnable initLogger = null
+initLogger = {
+    boolean loaded = false
+    while (!loaded) {
+        try {
+            if (!currentConfig.harnessPath) throw new Exception("Harness path not set")
+            File loggerFile = new File(currentConfig.harnessPath, "SysMLv2Logger.groovy")
+            if (!loggerFile.exists()) throw new Exception("Logger file not found: " + loggerFile.getAbsolutePath())
+            
+            def LoggerClass = new GroovyClassLoader(getClass().getClassLoader()).parseClass(loggerFile)
+            File logDir = currentConfig.logPath ? new File(currentConfig.logPath) : new File("test-harness-logs")
+            logDir.mkdirs()
+            File harnessLog = new File(logDir, "test-harness.log")
+            logger = LoggerClass.newInstance('TestHarness', harnessLog)
+            if (currentConfig.guiLogLevel) {
+                LoggerClass.guiLogLevel = currentConfig.guiLogLevel
+            }
+            logger.info('=== Test harness starting/reloaded ===')
+            loaded = true
+        } catch (Exception e) {
+            System.err.println("Logger init failed: " + e.getMessage())
+            int choice = JOptionPane.showConfirmDialog(null, 
+                "Failed to load SysMLv2Logger.groovy:\n" + e.getMessage() + "\n\nWould you like to locate the test harness directory now?", 
+                "Test Harness Initialization Error", 
+                JOptionPane.YES_NO_OPTION, JOptionPane.ERROR_MESSAGE)
+                
+            if (choice == JOptionPane.YES_OPTION) {
+                JFileChooser chooser = new JFileChooser()
+                chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
+                chooser.setDialogTitle("Select directory containing SysMLv2Logger.groovy")
+                if (currentConfig.harnessPath) {
+                    File f = new File(currentConfig.harnessPath)
+                    if (f.exists()) chooser.setCurrentDirectory(f)
+                }
+                if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+                    currentConfig.harnessPath = chooser.getSelectedFile().getAbsolutePath()
+                    ConfigManager.save(currentConfig as Map)
+                    // UI dialog will need to be updated if it exists
+                    if (configDialog != null) {
+                        SwingUtilities.invokeLater({ configDialog.loadFromConfig() } as Runnable)
+                    }
+                    // Loop will retry
+                } else {
+                    throw new RuntimeException("Test harness initialization aborted by user.")
+                }
+            } else {
+                throw new RuntimeException("Test harness initialization aborted by user.")
+            }
+        }
+    }
+}
+
+// Initialize logger
+initLogger()
+
+// Show dialog on startup if EDT allows
+SwingUtilities.invokeLater({
+    configDialog = new HarnessConfigDialog({
+        currentConfig = ConfigManager.load()
+        initLogger()
+    } as Runnable)
+    configDialog.loadFromConfig()
+    configDialog.setVisible(true) // Always show the dialog so it is discoverable
+} as Runnable)
 
 // ---- Hand-rolled JSON (FastStringUtils-free) ------------------------------
 class Jzon {
@@ -331,7 +522,14 @@ class ScriptRunner {
             System.setOut(tapOut)
             System.setErr(tapErr)
             try {
-                def shell = new GroovyShell(state.loader, new Binding([args: state.args as String[]]))
+                def cfg = ConfigManager.load()
+                def bindingMap = [
+                    args: state.args as String[],
+                    HarnessPath: cfg.harnessPath,
+                    ProjectPath: cfg.projectPath,
+                    LogPath: cfg.logPath
+                ]
+                def shell = new GroovyShell(state.loader, new Binding(bindingMap))
                 shell.evaluate(f)
                 state.state = 'done'
             } catch (InterruptedException ie) {
@@ -464,6 +662,7 @@ HttpServer server = HttpServer.create(new InetSocketAddress(InetAddress.getByNam
 server.setExecutor(Executors.newFixedThreadPool(4))
 
 server.createContext('/run', { HttpExchange ex ->
+    if (configDialog != null) configDialog.appendLog(ex.requestMethod + " /run")
     try {
         if (ex.requestMethod != 'POST') { Http.sendJson(ex, 405, [error: 'POST only']); return }
         def body = Http.readBody(ex)
@@ -482,6 +681,7 @@ server.createContext('/run', { HttpExchange ex ->
 } as HttpHandler)
 
 server.createContext('/stop', { HttpExchange ex ->
+    if (configDialog != null) configDialog.appendLog(ex.requestMethod + " /stop")
     try {
         def body = Http.readBody(ex)
         def parsed = body ? Jzon.decode(body) : [:]
@@ -494,6 +694,7 @@ server.createContext('/stop', { HttpExchange ex ->
 } as HttpHandler)
 
 server.createContext('/status', { HttpExchange ex ->
+    if (configDialog != null) configDialog.appendLog(ex.requestMethod + " /status")
     try {
         def s = runner.currentState()
         Http.sendJson(ex, 200, s == null ? [state: 'idle'] : s.toMap())
@@ -504,6 +705,7 @@ server.createContext('/status', { HttpExchange ex ->
 } as HttpHandler)
 
 server.createContext('/log', { HttpExchange ex ->
+    if (configDialog != null) configDialog.appendLog(ex.requestMethod + " /log")
     try {
         def s = runner.currentState()
         if (s == null) { Http.sendText(ex, 200, ''); return }
@@ -516,7 +718,63 @@ server.createContext('/log', { HttpExchange ex ->
     }
 } as HttpHandler)
 
+server.createContext('/config', { HttpExchange ex ->
+    if (configDialog != null) configDialog.appendLog(ex.requestMethod + " /config")
+    try {
+        if (ex.requestMethod == 'GET') {
+            Http.sendJson(ex, 200, currentConfig)
+        } else if (ex.requestMethod == 'POST') {
+            def body = Http.readBody(ex)
+            def parsed = body ? Jzon.decode(body) : [:]
+            if (parsed.harnessPath != null) currentConfig.harnessPath = parsed.harnessPath
+            if (parsed.projectPath != null) currentConfig.projectPath = parsed.projectPath
+            if (parsed.logPath != null) currentConfig.logPath = parsed.logPath
+            if (parsed.guiLogLevel != null) currentConfig.guiLogLevel = parsed.guiLogLevel
+            ConfigManager.save(currentConfig as Map)
+            
+            // Reinitialize logger if harness path changed
+            if (parsed.harnessPath != null) {
+                initLogger()
+            }
+            
+            // Update UI if EDT allows
+            SwingUtilities.invokeLater({
+                if (configDialog != null) configDialog.loadFromConfig()
+            } as Runnable)
+            
+            Http.sendJson(ex, 200, currentConfig)
+        } else {
+            Http.sendJson(ex, 405, [error: 'GET or POST only'])
+        }
+    } catch (Throwable t) {
+        logger.error('/config failed', t)
+        try { Http.sendJson(ex, 500, [error: t.toString()]) } catch (Throwable ignored) {}
+    }
+} as HttpHandler)
+
+server.createContext('/show-config', { HttpExchange ex ->
+    if (configDialog != null) configDialog.appendLog(ex.requestMethod + " /show-config")
+    try {
+        SwingUtilities.invokeLater({
+            if (configDialog == null) {
+                configDialog = new HarnessConfigDialog({
+                    currentConfig = ConfigManager.load()
+                    initLogger()
+                } as Runnable)
+                configDialog.loadFromConfig()
+            }
+            configDialog.setVisible(true)
+            configDialog.toFront()
+        } as Runnable)
+        Http.sendJson(ex, 200, [status: 'ok'])
+    } catch (Throwable t) {
+        logger.error('/show-config failed', t)
+        try { Http.sendJson(ex, 500, [error: t.toString()]) } catch (Throwable ignored) {}
+    }
+} as HttpHandler)
+
 server.createContext('/stop-harness', { HttpExchange ex ->
+    if (configDialog != null) configDialog.appendLog(ex.requestMethod + " /stop-harness")
     try {
         logger.info('Shutdown requested via /stop-harness')
         runner.stop('harness shutdown')
@@ -533,6 +791,7 @@ server.createContext('/stop-harness', { HttpExchange ex ->
 } as HttpHandler)
 
 server.createContext('/', { HttpExchange ex ->
+    if (configDialog != null) configDialog.appendLog(ex.requestMethod + " " + ex.requestURI.path)
     try {
         String reqPath = ex.requestURI.path
         if (reqPath == '/' || reqPath == '/health') {

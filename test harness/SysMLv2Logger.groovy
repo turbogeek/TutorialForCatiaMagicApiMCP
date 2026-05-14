@@ -57,6 +57,16 @@ class SysMLv2Logger {
         this.logFile = prepareLogFile(logFile)
     }
 
+    public static String guiLogLevel = 'WARN'
+
+    private boolean shouldLogToGUI(String level) {
+        if (guiLogLevel == 'NONE') return false
+        if (guiLogLevel == 'INFO') return true
+        if (guiLogLevel == 'WARN' && level != 'INFO') return true
+        if (guiLogLevel == 'ERROR' && level == 'ERROR') return true
+        return false
+    }
+
     /**
      * Ensure the parent directory exists and the file is empty. Return the
      * File, or null on any failure (never throws — logging must not kill
@@ -102,17 +112,17 @@ class SysMLv2Logger {
 
     /**
      * Log an info message.
-     * Note: Does not echo to GUI log to reduce console clutter.
-     * Only WARN and ERROR are shown in the user console.
      */
     public void info(String message) {
         log.info(message)
+        if (gl != null && shouldLogToGUI('INFO')) {
+            gl.log('[INFO] ' + message)
+        }
         appendToFile('INFO', message, null)
     }
 
     /**
      * Log a debug message.
-     * Note: Does not echo to GUI log by default to avoid clutter.
      */
     public void debug(String message) {
         log.debug(message)
@@ -124,7 +134,7 @@ class SysMLv2Logger {
      */
     public void warn(String message) {
         log.warn(message)
-        if (gl != null) {
+        if (gl != null && shouldLogToGUI('WARN')) {
             gl.log('[WARNING] ' + message)
         }
         appendToFile('WARN', message, null)
@@ -136,9 +146,9 @@ class SysMLv2Logger {
      */
     public void warn(String message, Throwable t) {
         log.warn(message, t)
-        if (gl != null) {
+        if (gl != null && shouldLogToGUI('WARN')) {
             gl.log('[WARNING] ' + message + '\n' + stackTraceAsString(t))
-        } else {
+        } else if (gl == null) {
             System.err.println('[WARNING] ' + message)
             t.printStackTrace(System.err)
         }
@@ -150,9 +160,9 @@ class SysMLv2Logger {
      */
     public void error(String message) {
         log.error(message)
-        if (gl != null) {
+        if (gl != null && shouldLogToGUI('ERROR')) {
             gl.log('[ERROR] ' + message)
-        } else {
+        } else if (gl == null) {
             System.err.println('[ERROR] ' + message)
         }
         appendToFile('ERROR', message, null)
@@ -164,9 +174,9 @@ class SysMLv2Logger {
      */
     public void error(String message, Throwable t) {
         log.error(message, t)
-        if (gl != null) {
+        if (gl != null && shouldLogToGUI('ERROR')) {
             gl.log('[ERROR] ' + message + '\n' + stackTraceAsString(t))
-        } else {
+        } else if (gl == null) {
             System.err.println('[ERROR] ' + message)
             t.printStackTrace(System.err)
         }

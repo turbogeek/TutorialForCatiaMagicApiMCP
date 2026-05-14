@@ -99,6 +99,20 @@ The next iteration will package the harness as a small Cameo plugin
 server when Cameo launches — zero-click after installation. For now,
 the Macros route gets us functional immediately with no build step.
 
+## Configuration UI
+
+When you start the harness via the macro, a modeless **Test Harness Configuration** dialog will appear. This dialog allows you to set up the environment for the harness and the scripts it runs:
+
+- **Harness Path:** The absolute path to the directory containing `start-harness.groovy` and `SysMLv2Logger.groovy`. If this is incorrect, the harness will prompt you with a file browser to locate it.
+- **Project Path:** The absolute path to the root of your current work. Scripts can read this to locate input/output data or other resources.
+- **Log Path:** The absolute path to the directory where dedicated script logs (and the harness's own log) should be written.
+- **GUI Log Level:** A dropdown to toggle how much logging is mirrored to the MagicDraw GUI Console. Options: `INFO`, `WARN`, `ERROR`, `NONE`.
+  - *Caveat:* The MagicDraw GUI console automatically steals focus and pops up whenever a message is logged to it. To prevent constant interruptions during execution, set this to `ERROR` or `NONE`. All messages (including `INFO` and `DEBUG`) are still always written to the underlying file logs regardless of this GUI setting.
+
+At the bottom of the dialog is an **Endpoint Call Log**. Every time an HTTP request is made to the harness (e.g., when an AI agent runs a script via `/run` or checks `/status`), the request is logged here with a timestamp so you can monitor the activity.
+
+If you close the configuration dialog, you can reopen it without restarting the harness by running the `Test Harness — Start` macro again, or by making a request to the `/show-config` endpoint.
+
 ## Use
 
 ### Shell and batch wrappers (`bin/`)
@@ -212,3 +226,12 @@ per the `dedicated-log-file` convention).
   inside Cameo. These route through `FastStringUtils` whose SPI lookup
   fails in the Cameo classloader (`Unable to load FastStringService`).
   The harness uses a hand-rolled JSON encoder/decoder to avoid this.
+
+  ## Other troubleshooting
+
+  ### Antigravity stops responding to prompts
+
+  #### Worktree problem
+  
+  Open Terminal and run the following command:
+  git config --unset extensions.worktreeConfig
