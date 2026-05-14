@@ -25,6 +25,58 @@ Once the user is done, the GUI should create the UseCase and Activity diagram wi
 
 When we are create a list of activities that match the names of the use cases, we will put each activity. If a extends relationship is present, we will put create an extends activity after the base activity. If an includes relationship is present, we will add a Call Activity action. If it is an extends place a decision node connected to a control flow with a guard with the name of the trigger (if one exists) that goes to the extends call Behavior action typed by the extends use case Activity.
 
+For connections, These should be matrix based, so create a matrix that shows the connections between use cases for extends, includes, generalization relationships, assocaitions, and a matrix that shows the connections between actors for generalization relationships.
+
+### Other Features
+
+#### Verb Noun detection
+
+Verb Noun detection to allow creation of for nouns Blocks,parts, actors (v1) or for verbs, actions (v2), Activities (v1).
+
+#### Ability to load and store data as markdown
+
+Need to load and store the data as markdown.  
+
+## GUI Design
+
+The UseCaseDialog should be a modal dialog that is displayed in the center of the screen. It should have the following fields:
+
+- Primary Actors: A text field for entering the names of the primary actors.  
+- Secondary Actors: A text field for entering the names of the secondary actors.
+- System Context: A text field for entering the name of the system context.
+- Use Cases: A text field for entering the names of the use cases.
+- Extends Relationships: A text area for entering the extends relationships.
+- Includes Relationships: A text area for entering the includes relationships.
+- Generalization Relationships: A text area for entering the generalization relationships.
+
+The dialog should have the following buttons:
+
+- Create: Creates the use case and activity diagram.
+- Cancel: Cancels the dialog.
+
+## SysMLv1 and SysMLv2 Differences
+
+Refer to the table below for the differences between SysMLv1 and SysMLv2:
+
+| SysMLv1 | SysMLv2 |
+| --- | --- |
+| Block | Part Definition |
+| Part Usage | Part Usage |
+| Interface Block | Port |
+| Requirement | Requirement |
+| Satisfy Requirement | Satisfy Requirement |
+| Activity | Action |
+| Call Behavior Action | Call Behavior Action |
+| Decision Node | Decision Node |
+| Control Flow | Control Flow |
+| Guard | Guard |
+| Generalization | Generalization |
+| Association | Association |
+| System Context | System Context |
+| Use Case | Use Case |
+| Include | Include |
+| Extend | Include | (Note that we need to create metadata to track the trigger and extends use case)
+
 ## model structure
 
 For now we will create a package in the root namespace called "Use Cases" to hold all the SysML v1.6 diagrams. Organize primary, secondary actors into sub-packages. Create the UseCase diagram and Activity diagram in that package. Note that the Activities should be in a package name Behavior.
@@ -53,3 +105,60 @@ ISO/IEC/IEEE 2011
 [sebokwiki](https://sebokwiki.org/wiki/Guide_to_the_Systems_Engineering_Body_of_Knowledge_(SEBoK))
 
 ## Files
+
+## Test Examples
+
+### Primary Actors
+
+User, Dog,  Waste Processor
+
+### Secondary Actors
+
+External Waste Management System, Child, Robot Monitoring,  Repair Technician, WiFi Router,Cat, Power Grid,solar panel
+
+### System Context
+
+Smart Dog Waste Collector System
+
+- Pooper Scooper (Camera, Battery, Motor, Arm, etc.)
+- Docking Station
+- Waste Dijester
+
+### Use Cases
+
+- Initialize Pooper Scooper
+- Enrole Dog
+- Enrole users
+- Learn schedule
+- Learn Yard
+- Self Test
+- Detect Tampering
+- Detect Wifi Signal Loss
+- Detect power loss
+- Detect Degradation of Performance
+- Charge Batteries
+- Avoid Obstruction
+- Report Obstruction
+- Locate Poop
+- Avoid Obstruction
+- Report Obstruction
+- Avoid Child
+- Detect Tampering
+- Emergency Shutdown
+- Dump Poop into Digester
+- Detect Digester Full
+- Report Digester Full
+- Report Fauld
+- Enter Diagnostic Mode
+- Send Diagnostics
+- Update Software
+- Detect Cat
+- Bark at Cat
+
+### Relations
+
+#### Actor to Use Case
+
+### Use Case to includes Use Case
+
+### Use Case to extended Case
