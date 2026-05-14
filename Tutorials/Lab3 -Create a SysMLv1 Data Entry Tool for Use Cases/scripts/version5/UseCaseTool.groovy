@@ -40,7 +40,7 @@ def extractVerbNoun = { String phrase ->
     return [verb: phrase.trim(), noun: ""]
 }
 
-def runTool = {
+def runTool = { boolean isTestMode ->
     // UI Setup
     def dialog = new JDialog((Frame)null, "SysML Data Entry (v5)", true) // Modal
     dialog.setSize(700, 600)
@@ -598,12 +598,16 @@ def runTool = {
             SessionManager.getInstance().closeSession(project)
             log.info("Model generated successfully!")
             dialog.setAlwaysOnTop(false)
-            JOptionPane.showMessageDialog(dialog, "SysML model successfully generated!", "Success", JOptionPane.INFORMATION_MESSAGE)
+            if (!isTestMode) {
+                JOptionPane.showMessageDialog(dialog, "SysML model successfully generated!", "Success", JOptionPane.INFORMATION_MESSAGE)
+            }
             dialog.dispose()
         } catch (Throwable innerEx) {
             SessionManager.getInstance().cancelSession(project)
             log.error("Failed to create model: " + innerEx.getMessage(), innerEx)
-            JOptionPane.showMessageDialog(dialog, "Failed to create model: " + innerEx.getMessage(), "Error", JOptionPane.ERROR_MESSAGE)
+            if (!isTestMode) {
+                JOptionPane.showMessageDialog(dialog, "Failed to create model: " + innerEx.getMessage(), "Error", JOptionPane.ERROR_MESSAGE)
+            }
         }
     }
 
@@ -612,12 +616,23 @@ def runTool = {
     } as ActionListener)
 
     dialog.setLocationRelativeTo(null)
-    dialog.setVisible(true)
+    
+    if (isTestMode) {
+        def testFile = new File(projectDir, "Tutorials/Lab3 -Create a SysMLv1 Data Entry Tool for Use Cases/scripts/version5/test_data.md")
+        if (testFile.exists()) {
+            parseMarkdown(testFile)
+            generateModel()
+        }
+    } else {
+        dialog.setVisible(true)
+    }
 }
+
+boolean isTestMode = args != null && args.contains("test")
 
 SwingUtilities.invokeLater({
     try {
-        runTool()
+        runTool(isTestMode)
     } catch (Throwable t) {
         log.error("Unhandled exception starting UI", t)
     }
