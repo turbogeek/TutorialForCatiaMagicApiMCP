@@ -167,6 +167,11 @@ upper bound; subtract ~25–40 % for a realistic block range):
 | Brackets / quotes balanced | static script | ✅ `{} () []` and `'` all balanced |
 | `calc` usage bindings ⊆ `calc def` params | static script | ✅ all usages, 0 problems |
 | **Grammar + semantic parse** | **`sysml-validator` CLI (ANTLR4 + semantic engine)** | ✅ **0 errors, 0 warnings** |
+| **Production plugin parse + load** | **Cameo SysML v2 plugin** (`SysMLTransientModelBuilder` via `/load-sysml`) | ✅ **loaded successfully, 0 diagnostics** |
+
+> Two independent validators agree: the standalone ANTLR `sysml-validator` and
+> the production Cameo/Dassault textual model builder (which type-checks a
+> transient model and only commits if clean) both accept the model with no errors.
 
 ### How to run the validator
 
