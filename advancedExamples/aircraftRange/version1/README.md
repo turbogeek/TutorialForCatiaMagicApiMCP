@@ -47,6 +47,13 @@ ISQ quantity type and SI unit.
 > arithmetic — including `sqrt` and fractional powers — validates against the
 > SysMLv2 standard library with zero dimensional-analysis risk. The **part defs**
 > carry the typed ISQ attributes with units (the engineering spec).
+>
+> **Natural log:** `ln` is absent from the SysMLv2 standard library, so
+> `MathExtensions::ln` supplies it as a **Groovy textual representation**
+> (`rep lnGroovy language "Groovy" /* result = Math.log(x) */`) that a
+> scripting-capable tool (e.g. the Cameo simulation engine) executes. The worked
+> examples also pass `structuralEfficiency = ln(W_i/W_f)` precomputed, so they
+> stay evaluable with stdlib functions alone.
 
 ---
 
@@ -180,7 +187,7 @@ two-dimensional (battery ⇄ fuel ⇄ payload).
 | Math self-consistency & expected numbers | `reference_calc.py` (Python 3) | ✅ pass — realistic, internally consistent |
 | ISQ value-type names exist | SysML v2 release library (`ISQ*`) | ✅ all confirmed |
 | SI unit tokens (`m²`,`kg⋅m⁻³`,`m⋅s⁻²`,`m/s`,`J/kg`,…) | SysML v2 release `SI.sysml` | ✅ byte-exact |
-| Available math fns (`sqrt`,`**`,`^`; **no `ln`**) | `RealFunctions.kerml` | ✅ confirmed → `ln` handled as input |
+| Available math fns (`sqrt`,`**`,`^`; **no `ln`**) | `RealFunctions.kerml` | ✅ confirmed → `ln` via Groovy `rep` + precomputed input |
 | Brackets / quotes balanced | static script | ✅ `{} () []` and `'` all balanced |
 | `calc` usage bindings ⊆ `calc def` params | static script | ✅ all usages, 0 problems |
 | **Grammar + semantic parse** | **`sysml-validator` CLI (ANTLR4 + semantic engine)** | ✅ **0 errors, 0 warnings** |
@@ -220,17 +227,24 @@ python reference_calc.py
 
 ---
 
-## 5. Your turn (learning contribution)
+## 5. Rigorous propeller endurance
 
-`AircraftRangePerformance.sysml` contains an **abstract** `calc def
-EnduranceProp_Rigorous` with a `// TODO(you)` block. It asks you to implement the
-classical rigorous propeller-endurance expression
+`calc def EnduranceProp_Rigorous` implements the classical form (Anderson) using
+only stdlib `sqrt` and `**`:
 
 ```
 E = (η_p/(g·c_p)) · (C_L^1.5 / C_D) · √(2·ρ·S) · (W_f^(-1/2) − W_i^(-1/2))
 ```
 
-using only `sqrt(...)` and `**`. This is the form that makes "max endurance =
-max C_L^1.5/C_D = minimum power required" mathematically explicit. Verify your
-result by adding the same equation to `reference_calc.py` and comparing against
-the Cessna 172 numbers.
+This is the form that makes "max endurance = max C_L^1.5/C_D = minimum power
+required" mathematically explicit (vs. the simpler constant-velocity
+`EnduranceCombustionPowerProducing`).
+
+## 6. Comment conventions (SysML v2)
+
+- Multi-line comments are **one** `/* … */` block (never a stack of one-liners).
+- A comment **about an element** is `doc /* … */` placed **inside** that element
+  (package, part def, attribute, calc def, calc usage).
+- A comment about a **set of lines** is a plain `/* … */` above the first line.
+- Calcs carry the **math in the expression**, not in a comment; the natural log
+  uses a Groovy textual representation (see §1).
