@@ -563,7 +563,333 @@ package AircraftRangePerformance {
     }
 
     /* ====================================================================
-     * 8.  DESIGN-TARGET REQUIREMENTS  (optional; threshold form)
+     * 8.  WEIGHT BUDGET & PAYLOAD-RANGE  (the trade-study foundation)
+     *     Weight law:  MTOW = OEW + crew + paxPayload + cargo + fuel
+     *     usefulLoad = MTOW - OEW. Every kg of fuel is a kg NOT sold as
+     *     payload -> the passengers/cargo/fuel trade. Masses [kg],
+     *     energies [J], weights (where needed) [N].
+     * ==================================================================== */
+
+    part def CabinStandardLoads {
+        doc /* Standard per-occupant weights used across the trade studies. */
+        attribute passengerBodyWeight : MassValue = 84.0 [kg];        /* incl. carry-on */
+        attribute checkedLuggagePerPassenger : MassValue = 23.0 [kg]; /* one checked bag */
+        attribute crewMemberWeight : MassValue = 95.0 [kg];           /* incl. bag */
+        /* => per-passenger payload = 84 + 23 = 107 kg ; 110 pax = 11,770 kg ;
+              5 crew * 95 = 475 kg. */
+    }
+
+    calc def PassengerPayload {
+        doc /* paxPayload = passengerCount * (body + luggage). [kg] */
+        in passengerCount : Real;
+        in perPassengerWeight : Real;   /* body + luggage [kg] */
+        return passengerPayload : Real = passengerCount * perPassengerWeight;
+    }
+
+    calc def UsefulLoad {
+        doc /* usefulLoad = MTOW - OEW. The pie shared by crew + pax + cargo + fuel. [kg] */
+        in maxTakeoffWeight : Real;       /* MTOW [kg] */
+        in operatingEmptyWeight : Real;   /* OEW  [kg] */
+        return usefulLoad : Real = maxTakeoffWeight - operatingEmptyWeight;
+    }
+
+    calc def TakeoffMass {
+        doc /* Sum the weight budget; should be <= MTOW. [kg] */
+        in operatingEmptyWeight : Real;
+        in crewWeight : Real;
+        in passengerPayload : Real;
+        in cargoMass : Real;
+        in fuelMass : Real;
+        return takeoffMass : Real =
+            operatingEmptyWeight + crewWeight + passengerPayload + cargoMass + fuelMass;
+    }
+
+    calc def MassRatio {
+        doc /* Breguet weight ratio W_i/W_f = takeoffMass / (takeoffMass - fuelMass).
+                structuralEfficiency = ln(this); supply that ln value to the Range calcs. */
+        in takeoffMass : Real;
+        in fuelMass : Real;
+        return massRatio : Real = takeoffMass / (takeoffMass - fuelMass);
+    }
+
+    calc def RangeHybridElectric {
+        doc /* Series-hybrid range (energy method). Battery mass is CONSTANT (no log term,
+                dead weight all flight); the turbogenerator burns fuel into electricity,
+                extending range. Fuel burns off -> use the mid-cruise average weight.
+                R = eta_drive * (E_battery + eta_gen * fuelMass * fuelHeatingValue)
+                      * (L/D) / W_average
+                E_battery [J], fuelHeatingValue [J/kg], W_average [N].  Returns range [m]. */
+        in drivetrainEfficiency : Real;    /* eta_drive = motor * esc * fan */
+        in generatorEfficiency : Real;     /* eta_gen  = fuel -> electric */
+        in batteryEnergy : Real;           /* E_battery [J] = batteryMass * specificEnergy */
+        in fuelMass : Real;                /* generator fuel [kg] */
+        in fuelHeatingValue : Real;        /* LHV [J/kg] */
+        in liftToDrag : Real;
+        in averageWeight : Real;           /* W_avg [N] = (takeoffMass - 0.5*fuelMass)*g */
+        return range : Real =
+            drivetrainEfficiency * (batteryEnergy + generatorEfficiency * fuelMass * fuelHeatingValue)
+            * liftToDrag / averageWeight;
+    }
+
+    /* ====================================================================
+     * 9.  TRANSPORT AIRCRAFT  (110 passengers + 5 crew, one per type)
+     *     Parallel hierarchy to section 1: TransportAircraft :> Aircraft
+     *     adds the weight-budget attributes; family mixins add consumption.
+     * ==================================================================== */
+
+    abstract part def TransportAircraft :> Aircraft {
+        doc /* A commercial transport sized by a weight budget. */
+        attribute maxTakeoffWeight : MassValue;       /* MTOW */
+        attribute operatingEmptyWeight : MassValue;   /* OEW (excludes crew & payload here) */
+        attribute maxFuelCapacity : MassValue;        /* tank limit */
+        attribute maxCargoMass : MassValue;           /* belly structural limit */
+        attribute designPassengers : Real = 110.0;
+        attribute designCrew : Real = 5.0;
+        attribute cruiseAirspeed : SpeedValue;
+    }
+
+    abstract part def PowerTransport :> TransportAircraft {
+        doc /* Power-producing transport (turboprop, open fan, piston). */
+        attribute propulsiveEfficiency : Real;            /* eta_p */
+        attribute powerSpecificFuelConsumption : Real;    /* c_p [kg/(W*s)] */
+    }
+    abstract part def JetTransport :> TransportAircraft {
+        doc /* Thrust-producing transport (turbofan). */
+        attribute thrustSpecificFuelConsumption : Real;   /* c_T [kg/(N*s)] */
+    }
+    abstract part def HybridTransport :> TransportAircraft {
+        doc /* Series-hybrid: solid-state battery + turbogenerator (jet-assist at takeoff). */
+        attribute batterySpecificEnergy : SpecificEnergyValue;  /* solid-state E* */
+        attribute installedBatteryMass : MassValue;             /* nominal pack */
+        attribute drivetrainEfficiency : Real;
+        attribute generatorEfficiency : Real;
+        attribute fuelHeatingValue : SpecificEnergyValue = 43000000.0 ['J/kg'];
+    }
+
+    part def JetLiner110 :> JetTransport {
+        doc /* A220-100-class turbofan. */
+        attribute redefines maxTakeoffWeight = 63100.0 [kg];
+        attribute redefines operatingEmptyWeight = 35300.0 [kg];
+        attribute redefines maxFuelCapacity = 17300.0 [kg];
+        attribute redefines maxCargoMass = 6000.0 [kg];
+        attribute redefines referenceWingArea = 112.3 ['m²'];
+        attribute redefines wingSpan = 35.1 [m];
+        attribute redefines aspectRatio = 10.97;
+        attribute redefines oswaldEfficiency = 0.82;
+        attribute redefines zeroLiftDragCoefficient = 0.019;
+        attribute redefines inducedDragFactor = 0.03539;
+        attribute redefines maxLiftToDragRatio = 19.284;
+        attribute redefines cruiseAirDensity = 0.38 ['kg⋅m⁻³'];
+        attribute redefines cruiseAirspeed = 230.0 ['m/s'];
+        attribute redefines thrustSpecificFuelConsumption = 1.45e-5;
+    }
+
+    part def OpenFan110 :> PowerTransport {
+        doc /* CFM RISE-class open-fan (propfan) narrowbody; ~20% better fuel than turbofan. */
+        attribute redefines maxTakeoffWeight = 63100.0 [kg];
+        attribute redefines operatingEmptyWeight = 35800.0 [kg];
+        attribute redefines maxFuelCapacity = 15000.0 [kg];
+        attribute redefines maxCargoMass = 6000.0 [kg];
+        attribute redefines referenceWingArea = 112.3 ['m²'];
+        attribute redefines wingSpan = 35.1 [m];
+        attribute redefines aspectRatio = 10.97;
+        attribute redefines oswaldEfficiency = 0.82;
+        attribute redefines zeroLiftDragCoefficient = 0.019;
+        attribute redefines inducedDragFactor = 0.03539;
+        attribute redefines maxLiftToDragRatio = 19.284;
+        attribute redefines cruiseAirDensity = 0.40 ['kg⋅m⁻³'];
+        attribute redefines cruiseAirspeed = 215.0 ['m/s'];
+        attribute redefines propulsiveEfficiency = 0.88;
+        attribute redefines powerSpecificFuelConsumption = 4.0e-8;
+    }
+
+    part def TurboProp110 :> PowerTransport {
+        doc /* Notional large regional turboprop (110 seats). Payload-limited, short-haul. */
+        attribute redefines maxTakeoffWeight = 36500.0 [kg];
+        attribute redefines operatingEmptyWeight = 20000.0 [kg];
+        attribute redefines maxFuelCapacity = 5000.0 [kg];
+        attribute redefines maxCargoMass = 4000.0 [kg];
+        attribute redefines referenceWingArea = 95.0 ['m²'];
+        attribute redefines wingSpan = 33.0 [m];
+        attribute redefines aspectRatio = 11.463;
+        attribute redefines oswaldEfficiency = 0.82;
+        attribute redefines zeroLiftDragCoefficient = 0.027;
+        attribute redefines inducedDragFactor = 0.03387;
+        attribute redefines maxLiftToDragRatio = 16.536;
+        attribute redefines cruiseAirDensity = 0.55 ['kg⋅m⁻³'];
+        attribute redefines cruiseAirspeed = 160.0 ['m/s'];
+        attribute redefines propulsiveEfficiency = 0.85;
+        attribute redefines powerSpecificFuelConsumption = 9.0e-8;
+    }
+
+    part def PistonLiner110 :> PowerTransport {
+        doc /* Historical recip airliner (DC-6/DC-7 era) for contrast -- slow, draggy. */
+        attribute redefines maxTakeoffWeight = 48500.0 [kg];
+        attribute redefines operatingEmptyWeight = 25000.0 [kg];
+        attribute redefines maxFuelCapacity = 12000.0 [kg];
+        attribute redefines maxCargoMass = 5000.0 [kg];
+        attribute redefines referenceWingArea = 135.9 ['m²'];
+        attribute redefines wingSpan = 35.8 [m];
+        attribute redefines aspectRatio = 9.430;
+        attribute redefines oswaldEfficiency = 0.78;
+        attribute redefines zeroLiftDragCoefficient = 0.029;
+        attribute redefines inducedDragFactor = 0.04329;
+        attribute redefines maxLiftToDragRatio = 14.115;
+        attribute redefines cruiseAirDensity = 0.66 ['kg⋅m⁻³'];
+        attribute redefines cruiseAirspeed = 145.0 ['m/s'];
+        attribute redefines propulsiveEfficiency = 0.82;
+        attribute redefines powerSpecificFuelConsumption = 8.5e-8;
+    }
+
+    part def HybridElectric110 :> HybridTransport {
+        doc /* "Think big" battery: aspirational 850 Wh/kg solid-state pack, plus a small
+                turbine that gives jet-assist at takeoff and becomes a cruise generator
+                (series hybrid / range extender). */
+        attribute redefines maxTakeoffWeight = 72000.0 [kg];
+        attribute redefines operatingEmptyWeight = 34000.0 [kg]; /* airframe+motors+gen, excl. battery */
+        attribute redefines maxFuelCapacity = 8000.0 [kg];       /* generator fuel */
+        attribute redefines maxCargoMass = 5000.0 [kg];
+        attribute redefines referenceWingArea = 112.3 ['m²'];
+        attribute redefines wingSpan = 35.1 [m];
+        attribute redefines aspectRatio = 10.97;
+        attribute redefines oswaldEfficiency = 0.82;
+        attribute redefines zeroLiftDragCoefficient = 0.020;
+        attribute redefines inducedDragFactor = 0.03539;
+        attribute redefines maxLiftToDragRatio = 18.796;
+        attribute redefines cruiseAirDensity = 0.40 ['kg⋅m⁻³'];
+        attribute redefines cruiseAirspeed = 210.0 ['m/s'];
+        attribute redefines batterySpecificEnergy = 3060000.0 ['J/kg']; /* 850 Wh/kg */
+        attribute redefines installedBatteryMass = 14000.0 [kg];
+        attribute redefines drivetrainEfficiency = 0.90;
+        attribute redefines generatorEfficiency = 0.40;
+    }
+
+    /* ====================================================================
+     * 10. TRADE STUDIES  (multiple scenarios per aircraft)
+     *     Each scenario fixes the weight budget (pax / cargo / fuel) and the
+     *     calc usages compute the resulting idealized still-air range.
+     *     ** Ranges are Breguet upper bounds at (L/D)max cruise, NO reserves
+     *        or climb -- subtract ~25-40% for a realistic block range. **
+     *     Numbers from trade_study_calc.py. Cabin: 110 pax @ 107 kg + 5 crew @ 95 kg.
+     * ==================================================================== */
+
+    /* ---- Turbofan JetLiner110 (useful load 27,800 kg) ---- */
+    package JetLiner110_TradeStudy {
+        private import AircraftRangePerformance::*;
+        calc usefulLoad : UsefulLoad {                          /* expect 27,800 kg */
+            in maxTakeoffWeight = 63100.0;  in operatingEmptyWeight = 35300.0;
+        }
+        calc paxPayloadFull : PassengerPayload {                /* expect 11,770 kg */
+            in passengerCount = 110.0;  in perPassengerWeight = 107.0;
+        }
+        calc s1_fullPax_maxFuel : RangeJet {     /* 110 pax, 0 cargo, 15,555 kg fuel -> 8,828 km */
+            in airspeed = 230.0;  in gravity = 9.80665;  in thrustSpecificFuelConsumption = 1.45e-5;
+            in liftToDrag = 19.284;  in structuralEfficiency = 0.2830;
+        }
+        calc s2_fullPax_maxCargo : RangeJet {    /* 110 pax, 6,000 kg cargo, 9,555 kg fuel -> 5,122 km */
+            in airspeed = 230.0;  in gravity = 9.80665;  in thrustSpecificFuelConsumption = 1.45e-5;
+            in liftToDrag = 19.284;  in structuralEfficiency = 0.1642;
+        }
+        calc s3_maxRange_70pax : RangeJet {       /* 70 pax, 2,535 kg cargo, 17,300 kg fuel -> 9,995 km */
+            in airspeed = 230.0;  in gravity = 9.80665;  in thrustSpecificFuelConsumption = 1.45e-5;
+            in liftToDrag = 19.284;  in structuralEfficiency = 0.3204;
+        }
+        calc s4_balanced : RangeJet {             /* 110 pax, 3,000 kg cargo, 12,555 kg fuel -> 6,920 km */
+            in airspeed = 230.0;  in gravity = 9.80665;  in thrustSpecificFuelConsumption = 1.45e-5;
+            in liftToDrag = 19.284;  in structuralEfficiency = 0.2219;
+        }
+    }
+
+    /* ---- Open fan OpenFan110 (useful load 27,300 kg) ---- */
+    package OpenFan110_TradeStudy {
+        private import AircraftRangePerformance::*;
+        calc usefulLoad : UsefulLoad {                          /* expect 27,300 kg */
+            in maxTakeoffWeight = 63100.0;  in operatingEmptyWeight = 35800.0;
+        }
+        calc s1_fullPax_maxFuel : RangeCombustionPowerProducing { /* 110 pax, ~0 cargo, 15,000 kg fuel -> 11,743 km */
+            in propulsiveEfficiency = 0.88;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 4.0e-8;  in liftToDrag = 19.284;  in structuralEfficiency = 0.2714;
+        }
+        calc s2_fullPax_maxCargo : RangeCombustionPowerProducing { /* 110 pax, 6,000 kg cargo, 9,055 kg fuel -> 6,701 km */
+            in propulsiveEfficiency = 0.88;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 4.0e-8;  in liftToDrag = 19.284;  in structuralEfficiency = 0.1549;
+        }
+        calc s4_balanced : RangeCombustionPowerProducing {        /* 110 pax, 3,000 kg cargo, 12,055 kg fuel -> 9,172 km */
+            in propulsiveEfficiency = 0.88;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 4.0e-8;  in liftToDrag = 19.284;  in structuralEfficiency = 0.2120;
+        }
+    }
+
+    /* ---- Turboprop TurboProp110 (useful load 16,500 kg; payload-limited) ---- */
+    package TurboProp110_TradeStudy {
+        private import AircraftRangePerformance::*;
+        calc usefulLoad : UsefulLoad {                          /* expect 16,500 kg */
+            in maxTakeoffWeight = 36500.0;  in operatingEmptyWeight = 20000.0;
+        }
+        calc s1_fullPax_maxFuel : RangeCombustionPowerProducing { /* 110 pax, 0 cargo, 4,255 kg fuel -> 1,974 km */
+            in propulsiveEfficiency = 0.85;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 9.0e-8;  in liftToDrag = 16.536;  in structuralEfficiency = 0.1239;
+        }
+        calc s2_fullPax_maxCargo : RangeCombustionPowerProducing { /* 110 pax, 4,000 kg cargo, 255 kg fuel -> 112 km */
+            in propulsiveEfficiency = 0.85;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 9.0e-8;  in liftToDrag = 16.536;  in structuralEfficiency = 0.0070;
+        }
+        calc s3_maxRange_70pax : RangeCombustionPowerProducing {  /* 70 pax, 3,535 kg cargo, 5,000 kg fuel -> 2,346 km */
+            in propulsiveEfficiency = 0.85;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 9.0e-8;  in liftToDrag = 16.536;  in structuralEfficiency = 0.1473;
+        }
+    }
+
+    /* ---- Piston PistonLiner110 (useful load 23,500 kg) ---- */
+    package PistonLiner110_TradeStudy {
+        private import AircraftRangePerformance::*;
+        calc usefulLoad : UsefulLoad {                          /* expect 23,500 kg */
+            in maxTakeoffWeight = 48500.0;  in operatingEmptyWeight = 25000.0;
+        }
+        calc s1_fullPax_maxFuel : RangeCombustionPowerProducing { /* 110 pax, 0 cargo, 11,255 kg fuel -> 3,666 km */
+            in propulsiveEfficiency = 0.82;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 8.5e-8;  in liftToDrag = 14.115;  in structuralEfficiency = 0.2640;
+        }
+        calc s3_maxRange_70pax : RangeCombustionPowerProducing {  /* 70 pax, 3,535 kg cargo, 12,000 kg fuel -> 3,947 km */
+            in propulsiveEfficiency = 0.82;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 8.5e-8;  in liftToDrag = 14.115;  in structuralEfficiency = 0.2843;
+        }
+        calc s4_balanced : RangeCombustionPowerProducing {        /* 110 pax, 2,500 kg cargo, 8,755 kg fuel -> 2,764 km */
+            in propulsiveEfficiency = 0.82;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 8.5e-8;  in liftToDrag = 14.115;  in structuralEfficiency = 0.1991;
+        }
+    }
+
+    /* ---- Hybrid HybridElectric110 (useful load 38,000 kg) ---- */
+    package HybridElectric110_TradeStudy {
+        private import AircraftRangePerformance::*;
+        doc /* fuelHeatingValue = 43e6 J/kg; eta_drive=0.90; eta_gen=0.40; 850 Wh/kg battery.
+                batteryEnergy = batteryMass * 3.06e6 J/kg. */
+        calc usefulLoad : UsefulLoad {                          /* expect 38,000 kg */
+            in maxTakeoffWeight = 72000.0;  in operatingEmptyWeight = 34000.0;
+        }
+        calc h1_batteryOnly : RangeHybridElectric {  /* 110 pax, 22,000 kg battery, 0 fuel (zero-emission) -> 1,613 km */
+            in drivetrainEfficiency = 0.90;  in generatorEfficiency = 0.40;
+            in batteryEnergy = 6.7320e10;    /* 22,000 kg * 3.06e6 */
+            in fuelMass = 0.0;  in fuelHeatingValue = 43000000.0;
+            in liftToDrag = 18.796;  in averageWeight = 7.0608e5;
+        }
+        calc h2_hybridBalanced : RangeHybridElectric { /* 110 pax, 14,000 kg battery + 8,000 kg fuel -> 4,577 km */
+            in drivetrainEfficiency = 0.90;  in generatorEfficiency = 0.40;
+            in batteryEnergy = 4.2840e10;    /* 14,000 kg * 3.06e6 */
+            in fuelMass = 8000.0;  in fuelHeatingValue = 43000000.0;
+            in liftToDrag = 18.796;  in averageWeight = 6.6685e5;
+        }
+        calc h3_maxRange_70pax : RangeHybridElectric { /* 70 pax, 14,000 kg battery + 8,000 kg fuel, no cargo -> 5,191 km */
+            in drivetrainEfficiency = 0.90;  in generatorEfficiency = 0.40;
+            in batteryEnergy = 4.2840e10;
+            in fuelMass = 8000.0;  in fuelHeatingValue = 43000000.0;
+            in liftToDrag = 18.796;  in averageWeight = 5.8806e5;
+        }
+    }
+
+    /* ====================================================================
+     * 11. DESIGN-TARGET REQUIREMENTS  (optional; threshold form)
      * ==================================================================== */
     package Requirements {
         private import ISQ::*;
@@ -585,7 +911,7 @@ package AircraftRangePerformance {
     }
 
     /* ====================================================================
-     * 9.  VIEWS
+     * 12. VIEWS
      * ==================================================================== */
     package Views {
         private import AircraftRangePerformance::*;
@@ -596,11 +922,30 @@ package AircraftRangePerformance {
             expose PowerProducingAircraft;
             expose ThrustProducingAircraft;
             expose ElectricAircraft;
+            expose TransportAircraft;
         }
 
         view equationsView {
-            doc /* All governing calc defs (aero core, characteristic speeds, range/endurance). */
+            doc /* All governing calc defs (aero core, characteristic speeds, range/endurance, weight budget). */
             expose AircraftRangePerformance::*;
+        }
+
+        view fleetView {
+            doc /* The 110-pax / 5-crew transport fleet, one per propulsion type. */
+            expose JetLiner110;
+            expose OpenFan110;
+            expose TurboProp110;
+            expose PistonLiner110;
+            expose HybridElectric110;
+        }
+
+        view tradeStudyView {
+            doc /* The payload-range trade-study scenarios across the fleet. */
+            expose JetLiner110_TradeStudy;
+            expose OpenFan110_TradeStudy;
+            expose TurboProp110_TradeStudy;
+            expose PistonLiner110_TradeStudy;
+            expose HybridElectric110_TradeStudy;
         }
     }
 }
