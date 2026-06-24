@@ -154,6 +154,23 @@ upper bound; subtract ~25–40 % for a realistic block range):
   adding fuel energy that *burns off*. Hybrid range model:
   `R = η_drive·(E_battery + η_gen·fuel·LHV)·(L/D) / W_avg`.
 
+### Payload-range diagram break points
+
+Each conventional `…_TradeStudy` package adds the three canonical corners of the payload-range
+diagram (`pointB_maxPayload`, `pointC_maxFuel`, `pointD_ferry`). `maxPayload` = MZFW − OEW.
+
+| Aircraft | B — max payload (design range) | C — full-tank knee | D — ferry (0 payload) |
+|---|---|---|---|
+| JetLiner110 | 15,000 kg → 6,778 km | 10,025 kg → 9,995 km | 0 kg → 12,304 km |
+| OpenFan110 | 15,000 kg → 8,977 km | 11,825 kg → 11,743 km | 0 kg → 14,971 km |
+| TurboProp110 | 13,000 kg → 1,378 km | 11,025 kg → 2,346 km | 0 kg → 3,479 km |
+| PistonLiner110 | 16,000 kg → 2,173 km | 11,025 kg → 3,947 km | 0 kg → 5,359 km |
+
+The flat top (range 0 → B) holds max payload while fuel fills to MTOW; the **B→C** segment is the
+constant-MTOW *payload-for-fuel* trade (every kg of fuel = a kg of payload); **C→D** burns the rest
+of the payload for range at full tanks. The hybrid is omitted here — its battery makes the envelope
+two-dimensional (battery ⇄ fuel ⇄ payload).
+
 ---
 
 ## 4. Validation status

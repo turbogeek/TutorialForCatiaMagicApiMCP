@@ -63,16 +63,16 @@ print(f"Cabin: {PAX} pax x {PER_PAX:.0f} kg = {PAX_PAYLOAD_FULL:,.0f} kg ; "
 # Each aircraft: 110-seat class. cargo capped by belly structural limit.
 FLEET = {
  "Turbofan (JetLiner110, A220-class)": dict(
-    fam="jet", MTOW=63100, OEW=35300, tankFuel=17300, cargoMax=6000,
+    fam="jet", MTOW=63100, OEW=35300, tankFuel=17300, cargoMax=6000, maxPayload=15000,
     S=112.3, b=35.1, e=0.82, cd0=0.019, rho=0.38, V=230.0, cT=1.45e-5, LD=None),
  "Open fan (OpenFan110, RISE narrowbody)": dict(
-    fam="power", MTOW=63100, OEW=35800, tankFuel=15000, cargoMax=6000,
+    fam="power", MTOW=63100, OEW=35800, tankFuel=15000, cargoMax=6000, maxPayload=15000,
     S=112.3, b=35.1, e=0.82, cd0=0.019, rho=0.40, V=215.0, eta_p=0.88, cp=4.0e-8, LD=None),
  "Turboprop (TurboProp110, large regional)": dict(
-    fam="power", MTOW=36500, OEW=20000, tankFuel=5000, cargoMax=4000,
+    fam="power", MTOW=36500, OEW=20000, tankFuel=5000, cargoMax=4000, maxPayload=13000,
     S=95.0, b=33.0, e=0.82, cd0=0.027, rho=0.55, V=160.0, eta_p=0.85, cp=9.0e-8, LD=None),
  "Piston-prop (PistonLiner110, DC-6/7 era)": dict(
-    fam="power", MTOW=48500, OEW=25000, tankFuel=12000, cargoMax=5000,
+    fam="power", MTOW=48500, OEW=25000, tankFuel=12000, cargoMax=5000, maxPayload=16000,
     S=135.9, b=35.8, e=0.78, cd0=0.029, rho=0.66, V=145.0, eta_p=0.82, cp=8.5e-8, LD=None),
  "Hybrid-electric (HybridElectric110, solid-state + turbogenerator)": dict(
     fam="hybrid", MTOW=72000, OEW=34000, tankFuel=8000, cargoMax=5000,
@@ -162,6 +162,24 @@ def scenarios_for(name, ac):
         rows.append(("Max range hybrid / 70 pax", pax2, cargo, fuel, batt,
                      cruise_range(ac, W, fuel, batt)))
     return useful, rows
+
+def breakpoints(ac):
+    """Classic payload-range corners B, C, D. Payload = revenue (pax+cargo); crew separate."""
+    OEW, MTOW, tank = ac["OEW"], ac["MTOW"], ac["tankFuel"]
+    useful = MTOW - OEW
+    avail = useful - CREW_PAYLOAD                 # revenue payload + fuel
+    maxPay = ac["maxPayload"]
+    out = []
+    # B: max payload, climb to MTOW (fuel = remainder, tank-capped)
+    fuelB = min(tank, avail - maxPay); payB = maxPay; MtoB = OEW + CREW_PAYLOAD + payB + fuelB
+    out.append(("B max-payload (design range)", payB, fuelB, MtoB, cruise_range(ac, MtoB, fuelB)))
+    # C: full tanks at MTOW (payload reduced)
+    fuelC = tank; payC = avail - fuelC; MtoC = OEW + CREW_PAYLOAD + payC + fuelC
+    out.append(("C max-fuel + payload",       payC, fuelC, MtoC, cruise_range(ac, MtoC, fuelC)))
+    # D: ferry -- full tanks, zero revenue payload (crew only)
+    fuelD = tank; payD = 0.0; MtoD = OEW + CREW_PAYLOAD + payD + fuelD
+    out.append(("D ferry (zero payload)",      payD, fuelD, MtoD, cruise_range(ac, MtoD, fuelD)))
+    return useful, maxPay, out
 
 def dump_literals(name, ac):
     """Emit the exact literal inputs the SysMLv2 calc usages need to reproduce range."""

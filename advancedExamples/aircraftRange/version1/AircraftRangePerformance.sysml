@@ -643,6 +643,7 @@ package AircraftRangePerformance {
         attribute operatingEmptyWeight : MassValue;   /* OEW (excludes crew & payload here) */
         attribute maxFuelCapacity : MassValue;        /* tank limit */
         attribute maxCargoMass : MassValue;           /* belly structural limit */
+        attribute maxPayload : MassValue;             /* max revenue payload = MZFW - OEW */
         attribute designPassengers : Real = 110.0;
         attribute designCrew : Real = 5.0;
         attribute cruiseAirspeed : SpeedValue;
@@ -672,6 +673,7 @@ package AircraftRangePerformance {
         attribute redefines operatingEmptyWeight = 35300.0 [kg];
         attribute redefines maxFuelCapacity = 17300.0 [kg];
         attribute redefines maxCargoMass = 6000.0 [kg];
+        attribute redefines maxPayload = 15000.0 [kg];
         attribute redefines referenceWingArea = 112.3 ['m²'];
         attribute redefines wingSpan = 35.1 [m];
         attribute redefines aspectRatio = 10.97;
@@ -690,6 +692,7 @@ package AircraftRangePerformance {
         attribute redefines operatingEmptyWeight = 35800.0 [kg];
         attribute redefines maxFuelCapacity = 15000.0 [kg];
         attribute redefines maxCargoMass = 6000.0 [kg];
+        attribute redefines maxPayload = 15000.0 [kg];
         attribute redefines referenceWingArea = 112.3 ['m²'];
         attribute redefines wingSpan = 35.1 [m];
         attribute redefines aspectRatio = 10.97;
@@ -709,6 +712,7 @@ package AircraftRangePerformance {
         attribute redefines operatingEmptyWeight = 20000.0 [kg];
         attribute redefines maxFuelCapacity = 5000.0 [kg];
         attribute redefines maxCargoMass = 4000.0 [kg];
+        attribute redefines maxPayload = 13000.0 [kg];
         attribute redefines referenceWingArea = 95.0 ['m²'];
         attribute redefines wingSpan = 33.0 [m];
         attribute redefines aspectRatio = 11.463;
@@ -728,6 +732,7 @@ package AircraftRangePerformance {
         attribute redefines operatingEmptyWeight = 25000.0 [kg];
         attribute redefines maxFuelCapacity = 12000.0 [kg];
         attribute redefines maxCargoMass = 5000.0 [kg];
+        attribute redefines maxPayload = 16000.0 [kg];
         attribute redefines referenceWingArea = 135.9 ['m²'];
         attribute redefines wingSpan = 35.8 [m];
         attribute redefines aspectRatio = 9.430;
@@ -798,6 +803,19 @@ package AircraftRangePerformance {
             in airspeed = 230.0;  in gravity = 9.80665;  in thrustSpecificFuelConsumption = 1.45e-5;
             in liftToDrag = 19.284;  in structuralEfficiency = 0.2219;
         }
+        /* -- payload-range diagram break points (maxPayload 15,000 kg, tank 17,300 kg) -- */
+        calc pointB_maxPayload : RangeJet {  /* payload 15,000 / fuel 12,325 @ MTOW -> 6,778 km (design range) */
+            in airspeed = 230.0;  in gravity = 9.80665;  in thrustSpecificFuelConsumption = 1.45e-5;
+            in liftToDrag = 19.284;  in structuralEfficiency = 0.2173;
+        }
+        calc pointC_maxFuel : RangeJet {     /* payload 10,025 / fuel 17,300 @ MTOW -> 9,995 km (knee) */
+            in airspeed = 230.0;  in gravity = 9.80665;  in thrustSpecificFuelConsumption = 1.45e-5;
+            in liftToDrag = 19.284;  in structuralEfficiency = 0.3204;
+        }
+        calc pointD_ferry : RangeJet {       /* payload 0 / fuel 17,300 -> 12,304 km (ferry / max range) */
+            in airspeed = 230.0;  in gravity = 9.80665;  in thrustSpecificFuelConsumption = 1.45e-5;
+            in liftToDrag = 19.284;  in structuralEfficiency = 0.3945;
+        }
     }
 
     /* ---- Open fan OpenFan110 (useful load 27,300 kg) ---- */
@@ -817,6 +835,19 @@ package AircraftRangePerformance {
         calc s4_balanced : RangeCombustionPowerProducing {        /* 110 pax, 3,000 kg cargo, 12,055 kg fuel -> 9,172 km */
             in propulsiveEfficiency = 0.88;  in gravity = 9.80665;
             in powerSpecificFuelConsumption = 4.0e-8;  in liftToDrag = 19.284;  in structuralEfficiency = 0.2120;
+        }
+        /* -- payload-range diagram break points (maxPayload 15,000 kg, tank 15,000 kg) -- */
+        calc pointB_maxPayload : RangeCombustionPowerProducing { /* payload 15,000 / fuel 11,825 @ MTOW -> 8,977 km */
+            in propulsiveEfficiency = 0.88;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 4.0e-8;  in liftToDrag = 19.284;  in structuralEfficiency = 0.2075;
+        }
+        calc pointC_maxFuel : RangeCombustionPowerProducing {    /* payload 11,825 / fuel 15,000 @ MTOW -> 11,743 km */
+            in propulsiveEfficiency = 0.88;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 4.0e-8;  in liftToDrag = 19.284;  in structuralEfficiency = 0.2714;
+        }
+        calc pointD_ferry : RangeCombustionPowerProducing {      /* payload 0 / fuel 15,000 -> 14,971 km (ferry) */
+            in propulsiveEfficiency = 0.88;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 4.0e-8;  in liftToDrag = 19.284;  in structuralEfficiency = 0.3461;
         }
     }
 
@@ -838,6 +869,19 @@ package AircraftRangePerformance {
             in propulsiveEfficiency = 0.85;  in gravity = 9.80665;
             in powerSpecificFuelConsumption = 9.0e-8;  in liftToDrag = 16.536;  in structuralEfficiency = 0.1473;
         }
+        /* -- payload-range diagram break points (maxPayload 13,000 kg, tank 5,000 kg) -- */
+        calc pointB_maxPayload : RangeCombustionPowerProducing { /* payload 13,000 / fuel 3,025 @ MTOW -> 1,378 km */
+            in propulsiveEfficiency = 0.85;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 9.0e-8;  in liftToDrag = 16.536;  in structuralEfficiency = 0.0865;
+        }
+        calc pointC_maxFuel : RangeCombustionPowerProducing {    /* payload 11,025 / fuel 5,000 @ MTOW -> 2,346 km */
+            in propulsiveEfficiency = 0.85;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 9.0e-8;  in liftToDrag = 16.536;  in structuralEfficiency = 0.1473;
+        }
+        calc pointD_ferry : RangeCombustionPowerProducing {      /* payload 0 / fuel 5,000 -> 3,479 km (ferry) */
+            in propulsiveEfficiency = 0.85;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 9.0e-8;  in liftToDrag = 16.536;  in structuralEfficiency = 0.2185;
+        }
     }
 
     /* ---- Piston PistonLiner110 (useful load 23,500 kg) ---- */
@@ -857,6 +901,19 @@ package AircraftRangePerformance {
         calc s4_balanced : RangeCombustionPowerProducing {        /* 110 pax, 2,500 kg cargo, 8,755 kg fuel -> 2,764 km */
             in propulsiveEfficiency = 0.82;  in gravity = 9.80665;
             in powerSpecificFuelConsumption = 8.5e-8;  in liftToDrag = 14.115;  in structuralEfficiency = 0.1991;
+        }
+        /* -- payload-range diagram break points (maxPayload 16,000 kg, tank 12,000 kg) -- */
+        calc pointB_maxPayload : RangeCombustionPowerProducing { /* payload 16,000 / fuel 7,025 @ MTOW -> 2,173 km */
+            in propulsiveEfficiency = 0.82;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 8.5e-8;  in liftToDrag = 14.115;  in structuralEfficiency = 0.1565;
+        }
+        calc pointC_maxFuel : RangeCombustionPowerProducing {    /* payload 11,025 / fuel 12,000 @ MTOW -> 3,947 km */
+            in propulsiveEfficiency = 0.82;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 8.5e-8;  in liftToDrag = 14.115;  in structuralEfficiency = 0.2843;
+        }
+        calc pointD_ferry : RangeCombustionPowerProducing {      /* payload 0 / fuel 12,000 -> 5,359 km (ferry) */
+            in propulsiveEfficiency = 0.82;  in gravity = 9.80665;
+            in powerSpecificFuelConsumption = 8.5e-8;  in liftToDrag = 14.115;  in structuralEfficiency = 0.3860;
         }
     }
 
