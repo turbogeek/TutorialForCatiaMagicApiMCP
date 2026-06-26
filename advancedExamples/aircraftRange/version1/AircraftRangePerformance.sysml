@@ -1119,6 +1119,369 @@ package AircraftRangePerformance {
     }
 
     /* ====================================================================
+     * 13. SYSTEM ARCHITECTURE  (the airplane AS a whole system)
+     *     A base AirplaneSystem decomposes the airplane into subsystems wired
+     *     by ports & connections, sequenced by a flight-phase state machine,
+     *     with subsystem masses rolled up to OEW and subsystems satisfying
+     *     system requirements. Each propulsion type is a specialization that
+     *     (a) inherits its performance parameters from the section-6 analysis
+     *     part def and (b) redefines the propulsion & energy subsystems.
+     * ==================================================================== */
+
+    /* ---- interface port kinds (flow carried is in the connection name) ---- */
+    port def EnergyPort {
+        doc /* Fuel or electrical energy flow from storage to propulsion. */
+    }
+    port def ThrustPort {
+        doc /* Propulsive force transmitted to the airframe. */
+    }
+    port def ElectricalPort {
+        doc /* Electrical power on the distribution bus. */
+    }
+    port def DataPort {
+        doc /* Control / data signals. */
+    }
+
+    /* ---- system-level requirements satisfied by the architecture ---- */
+    package SystemRequirements {
+        doc /* Capability requirements the airplane subsystems must satisfy. */
+        requirement ProvidePropulsion {
+            doc /* The airplane shall produce the thrust required for all flight phases. */
+        }
+        requirement StoreFlightEnergy {
+            doc /* The airplane shall store the energy (fuel and/or battery) for the mission. */
+        }
+        requirement CarryPayload {
+            doc /* The airplane shall carry 110 passengers and 5 crew plus baggage. */
+        }
+        requirement ControlFlight {
+            doc /* The airplane shall provide stability, control, and navigation. */
+        }
+        requirement DistributeElectrical {
+            doc /* The airplane shall generate and distribute electrical power to the systems. */
+        }
+        requirement ProvideStructure {
+            doc /* The airframe shall carry all flight and ground loads. */
+        }
+    }
+
+    /* ---- subsystem definitions (each carries a mass and its interface ports) ---- */
+    part def Airframe {
+        doc /* Structure: wing, fuselage, empennage, landing gear. Reacts thrust,
+                mounts control surfaces. */
+        attribute mass : MassValue;
+        part wing;
+        part fuselage;
+        part empennage;
+        part landingGear;
+        port thrustMount : ThrustPort;
+        port controlSurfaces : DataPort;
+    }
+
+    abstract part def PropulsionSystem {
+        doc /* Converts stored energy into thrust. Specialized per propulsion type. */
+        attribute mass : MassValue;
+        port energySupply : EnergyPort;
+        port thrust : ThrustPort;
+        port throttle : DataPort;
+        port generatorOutput : ElectricalPort[0..1];
+    }
+
+    abstract part def EnergyStorageSystem {
+        doc /* Stores mission energy. Its DRY mass is OEW; the fuel/battery mass it
+                holds is tracked by usableFuelMass / installedBatteryMass. */
+        attribute mass : MassValue;
+        port energyDelivery : EnergyPort;
+    }
+
+    part def Avionics {
+        doc /* Flight management, navigation, sensing. */
+        attribute mass : MassValue;
+        port powerSupply : ElectricalPort;
+        port dataOut : DataPort;
+    }
+
+    part def FlightControlSystem {
+        doc /* Control laws and actuation: commands control surfaces and engine throttle. */
+        attribute mass : MassValue;
+        port powerSupply : ElectricalPort;
+        port dataIn : DataPort;
+        port surfaceCommands : DataPort;
+        port throttleCommands : DataPort;
+    }
+
+    part def ElectricalSystem {
+        doc /* Generation and distribution bus feeding avionics and flight control. */
+        attribute mass : MassValue;
+        port powerBus : ElectricalPort;
+    }
+
+    part def CabinPayloadSystem {
+        doc /* The revenue payload: passengers + crew + cargo (NOT part of OEW). */
+        attribute mass : MassValue;
+        attribute passengerCount : Real = 110.0;
+        attribute crewCount : Real = 5.0;
+    }
+
+    /* ---- concrete propulsion subsystems (one per family) ---- */
+    part def TurbofanPropulsion :> PropulsionSystem {
+        doc /* Two high-bypass turbofans. */
+        part engineLeft;
+        part engineRight;
+    }
+    part def OpenFanPropulsion :> PropulsionSystem {
+        doc /* Two open-rotor (unducted fan) units: turbine core + counter-rotating fan. */
+        part rotorLeft;
+        part rotorRight;
+    }
+    part def TurbopropPropulsion :> PropulsionSystem {
+        doc /* Two turboprops: gas-turbine core + reduction gearbox + propeller. */
+        part engineLeft;
+        part engineRight;
+    }
+    part def PistonPropulsion :> PropulsionSystem {
+        doc /* Four reciprocating engines + propellers (historical airliner). */
+        part engine1;
+        part engine2;
+        part engine3;
+        part engine4;
+    }
+    part def HybridPropulsion :> PropulsionSystem {
+        doc /* Series hybrid: electric motors drive ducted fans; a turbogenerator gives
+                jet-assist at takeoff and recharges/feeds the bus in cruise. */
+        part electricMotorLeft;
+        part electricMotorRight;
+        part ductedFanLeft;
+        part ductedFanRight;
+        part powerElectronics;
+        part turboGenerator;
+        attribute redefines generatorOutput : ElectricalPort;
+    }
+
+    /* ---- concrete energy storage subsystems ---- */
+    part def FuelTanks :> EnergyStorageSystem {
+        doc /* Integral wing (and centre) fuel tanks. */
+        part wingTankLeft;
+        part wingTankRight;
+    }
+    part def HybridEnergyStorage :> EnergyStorageSystem {
+        doc /* Solid-state battery pack plus a generator fuel tank. */
+        part batteryPack;
+        part generatorFuelTank;
+    }
+
+    /* ---- base airplane system ---- */
+    abstract part def AirplaneSystem :> TransportAircraft {
+        doc /* The airplane as a whole system: subsystems wired by ports/connections,
+                a flight-phase state machine, a mission action sequence, subsystem-mass
+                rollup to OEW, and subsystem-to-requirement satisfaction. */
+
+        /* subsystems */
+        part airframe : Airframe {
+            satisfy SystemRequirements::ProvideStructure;
+        }
+        part propulsion : PropulsionSystem {
+            satisfy SystemRequirements::ProvidePropulsion;
+        }
+        part energyStorage : EnergyStorageSystem {
+            satisfy SystemRequirements::StoreFlightEnergy;
+        }
+        part avionics : Avionics;
+        part flightControl : FlightControlSystem {
+            satisfy SystemRequirements::ControlFlight;
+        }
+        part electrical : ElectricalSystem {
+            satisfy SystemRequirements::DistributeElectrical;
+        }
+        part cabin : CabinPayloadSystem {
+            satisfy SystemRequirements::CarryPayload;
+        }
+
+        /* connections (the system wiring) */
+        connection energyToPropulsion connect energyStorage.energyDelivery to propulsion.energySupply;
+        connection propulsionToAirframe connect propulsion.thrust to airframe.thrustMount;
+        connection fcsToSurfaces connect flightControl.surfaceCommands to airframe.controlSurfaces;
+        connection fcsToThrottle connect flightControl.throttleCommands to propulsion.throttle;
+        connection avionicsToFcs connect avionics.dataOut to flightControl.dataIn;
+        connection busToAvionics connect electrical.powerBus to avionics.powerSupply;
+        connection busToFcs connect electrical.powerBus to flightControl.powerSupply;
+
+        /* behaviour: flight-phase state machine */
+        state def FlightPhases {
+            doc /* Nominal mission phase progression. */
+            entry; then Parked;
+            state Parked;
+            state Taxi;
+            state Takeoff;
+            state Climb;
+            state Cruise;
+            state Descent;
+            state Approach;
+            state Landing;
+            transition first Parked then Taxi;
+            transition first Taxi then Takeoff;
+            transition first Takeoff then Climb;
+            transition first Climb then Cruise;
+            transition first Cruise then Descent;
+            transition first Descent then Approach;
+            transition first Approach then Landing;
+            transition first Landing then Parked;
+        }
+        exhibit state flightPhases : FlightPhases;
+
+        /* behaviour: mission action sequence */
+        action def StartUp;
+        action def TaxiOut;
+        action def TakeoffRoll;
+        action def ClimbToCruise;
+        action def CruiseLeg;
+        action def DescendApproach;
+        action def Land;
+        action def ShutDown;
+        action missionProfile {
+            doc /* End-to-end nominal mission thread. */
+            action startUp : StartUp;
+            action taxiOut : TaxiOut;
+            action takeoffRoll : TakeoffRoll;
+            action climbToCruise : ClimbToCruise;
+            action cruiseLeg : CruiseLeg;
+            action descendApproach : DescendApproach;
+            action land : Land;
+            action shutDown : ShutDown;
+            first startUp then taxiOut;
+            first taxiOut then takeoffRoll;
+            first takeoffRoll then climbToCruise;
+            first climbToCruise then cruiseLeg;
+            first cruiseLeg then descendApproach;
+            first descendApproach then land;
+            first land then shutDown;
+        }
+
+        /* mass rollup: structural (OEW) subsystems sum to <= OEW */
+        attribute structuralMassRollup : MassValue =
+            airframe.mass + propulsion.mass + energyStorage.mass
+            + avionics.mass + electrical.mass + flightControl.mass;
+        constraint oewConsistency {
+            doc /* The rolled-up subsystem mass shall not exceed the operating empty weight. */
+            structuralMassRollup <= operatingEmptyWeight
+        }
+    }
+
+    /* ---- the fleet as full systems (params inherited from section 6; subsystems redefined) ---- */
+    part def JetLinerSystem :> JetLiner110, AirplaneSystem {
+        doc /* Turbofan airliner system. Subsystem masses (illustrative) sum to OEW 35,300 kg. */
+        part redefines propulsion : TurbofanPropulsion {
+            attribute redefines mass = 7000.0 [kg];
+        }
+        part redefines energyStorage : FuelTanks {
+            attribute redefines mass = 1800.0 [kg];
+        }
+        part redefines airframe {
+            attribute redefines mass = 19500.0 [kg];
+        }
+        part redefines avionics {
+            attribute redefines mass = 1400.0 [kg];
+        }
+        part redefines electrical {
+            attribute redefines mass = 2100.0 [kg];
+        }
+        part redefines flightControl {
+            attribute redefines mass = 3500.0 [kg];
+        }
+    }
+
+    part def OpenFanSystem :> OpenFan110, AirplaneSystem {
+        doc /* Open-fan airliner system. Subsystem masses sum to OEW 35,800 kg. */
+        part redefines propulsion : OpenFanPropulsion {
+            attribute redefines mass = 8000.0 [kg];
+        }
+        part redefines energyStorage : FuelTanks {
+            attribute redefines mass = 1700.0 [kg];
+        }
+        part redefines airframe {
+            attribute redefines mass = 19100.0 [kg];
+        }
+        part redefines avionics {
+            attribute redefines mass = 1400.0 [kg];
+        }
+        part redefines electrical {
+            attribute redefines mass = 2100.0 [kg];
+        }
+        part redefines flightControl {
+            attribute redefines mass = 3500.0 [kg];
+        }
+    }
+
+    part def TurboPropSystem :> TurboProp110, AirplaneSystem {
+        doc /* Turboprop airliner system. Subsystem masses sum to OEW 20,000 kg. */
+        part redefines propulsion : TurbopropPropulsion {
+            attribute redefines mass = 4500.0 [kg];
+        }
+        part redefines energyStorage : FuelTanks {
+            attribute redefines mass = 900.0 [kg];
+        }
+        part redefines airframe {
+            attribute redefines mass = 10400.0 [kg];
+        }
+        part redefines avionics {
+            attribute redefines mass = 900.0 [kg];
+        }
+        part redefines electrical {
+            attribute redefines mass = 1300.0 [kg];
+        }
+        part redefines flightControl {
+            attribute redefines mass = 2000.0 [kg];
+        }
+    }
+
+    part def PistonSystem :> PistonLiner110, AirplaneSystem {
+        doc /* Piston airliner system (4 engines). Subsystem masses sum to OEW 25,000 kg. */
+        part redefines propulsion : PistonPropulsion {
+            attribute redefines mass = 6000.0 [kg];
+        }
+        part redefines energyStorage : FuelTanks {
+            attribute redefines mass = 1200.0 [kg];
+        }
+        part redefines airframe {
+            attribute redefines mass = 14000.0 [kg];
+        }
+        part redefines avionics {
+            attribute redefines mass = 600.0 [kg];
+        }
+        part redefines electrical {
+            attribute redefines mass = 1400.0 [kg];
+        }
+        part redefines flightControl {
+            attribute redefines mass = 1800.0 [kg];
+        }
+    }
+
+    part def HybridSystem :> HybridElectric110, AirplaneSystem {
+        doc /* Series-hybrid airliner system. Subsystem masses sum to OEW 34,000 kg
+                (battery cells and fuel are tracked separately, not in OEW). The
+                turbogenerator output feeds the electrical bus -- the extra wire below. */
+        part redefines propulsion : HybridPropulsion {
+            attribute redefines mass = 9000.0 [kg];
+        }
+        part redefines energyStorage : HybridEnergyStorage {
+            attribute redefines mass = 1500.0 [kg];
+        }
+        part redefines airframe {
+            attribute redefines mass = 16500.0 [kg];
+        }
+        part redefines avionics {
+            attribute redefines mass = 1400.0 [kg];
+        }
+        part redefines electrical {
+            attribute redefines mass = 2600.0 [kg];
+        }
+        part redefines flightControl {
+            attribute redefines mass = 3000.0 [kg];
+        }
+        connection generatorToBus connect propulsion.generatorOutput to electrical.powerBus;
+    }
+
+    /* ====================================================================
      * 11. DESIGN-TARGET REQUIREMENTS  (optional; threshold form)
      * ==================================================================== */
     package Requirements {
@@ -1176,6 +1539,16 @@ package AircraftRangePerformance {
             expose TurboProp110_TradeStudy;
             expose PistonLiner110_TradeStudy;
             expose HybridElectric110_TradeStudy;
+        }
+
+        view systemArchitectureView {
+            doc /* The airplane-as-a-system: base decomposition and the five type-specific systems. */
+            expose AirplaneSystem;
+            expose JetLinerSystem;
+            expose OpenFanSystem;
+            expose TurboPropSystem;
+            expose PistonSystem;
+            expose HybridSystem;
         }
     }
 }

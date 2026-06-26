@@ -180,6 +180,44 @@ two-dimensional (battery ⇄ fuel ⇄ payload).
 
 ---
 
+## 3c. The airplane as a whole system (architecture)
+
+Beyond the analysis layer, §13 of the model is a **system architecture**: the airplane decomposed
+into subsystems, wired by ports and connections, sequenced by a flight-phase state machine, with
+subsystem masses rolled up to OEW and subsystems satisfying capability requirements.
+
+**Base + specializations.** An `abstract part def AirplaneSystem :> TransportAircraft` holds the
+common decomposition; each type is a specialization that **inherits its performance parameters from
+the §6 analysis part def** and **redefines the propulsion & energy subsystems** (no parameter
+duplication, via the shared `TransportAircraft` ancestor):
+
+```
+part def HybridSystem :> HybridElectric110, AirplaneSystem {
+    part redefines propulsion : HybridPropulsion { … }
+    part redefines energyStorage : HybridEnergyStorage { … }
+    connection generatorToBus connect propulsion.generatorOutput to electrical.powerBus;
+}
+```
+
+| Layer | Elements |
+|---|---|
+| Subsystems | `Airframe`, `PropulsionSystem`*, `EnergyStorageSystem`*, `Avionics`, `FlightControlSystem`, `ElectricalSystem`, `CabinPayloadSystem` |
+| Propulsion (per type) | `TurbofanPropulsion`, `OpenFanPropulsion`, `TurbopropPropulsion`, `PistonPropulsion`, `HybridPropulsion` (motors + ducted fans + turbogenerator) |
+| Ports | `EnergyPort`, `ThrustPort`, `ElectricalPort`, `DataPort` |
+| Connections | energy→propulsion, propulsion→airframe (thrust), FCS→surfaces, FCS→throttle, avionics→FCS, bus→avionics/FCS; (hybrid) generator→bus |
+| Behavior | `FlightPhases` state machine (Parked→Taxi→Takeoff→Climb→Cruise→Descent→Approach→Landing) + a `missionProfile` action sequence |
+| Mass rollup | `structuralMassRollup = Σ subsystem.mass`, with `constraint { rollup <= operatingEmptyWeight }` |
+| Requirements | subsystems `satisfy` `ProvidePropulsion`, `StoreFlightEnergy`, `CarryPayload`, `ControlFlight`, `DistributeElectrical`, `ProvideStructure` |
+
+\* abstract — redefined per propulsion type. The five system part defs are `JetLinerSystem`,
+`OpenFanSystem`, `TurboPropSystem`, `PistonSystem`, `HybridSystem`; see `systemArchitectureView`.
+
+> The mass rollup is the bridge between layers: subsystem masses (illustrative, summing to each
+> type's OEW) feed the same `operatingEmptyWeight` that the §8 weight budget and §10 range trade
+> studies depend on.
+
+---
+
 ## 4. Validation status
 
 | Check | Tool | Result |
@@ -191,11 +229,13 @@ two-dimensional (battery ⇄ fuel ⇄ payload).
 | Brackets / quotes balanced | static script | ✅ `{} () []` and `'` all balanced |
 | `calc` usage bindings ⊆ `calc def` params | static script | ✅ all usages, 0 problems |
 | **Grammar + semantic parse** | **`sysml-validator` CLI (ANTLR4 + semantic engine)** | ✅ **0 errors, 0 warnings** |
-| **Production plugin parse + load** | **Cameo SysML v2 plugin** (`SysMLTransientModelBuilder` via `/load-sysml`) | ✅ **loaded successfully, 0 diagnostics** |
+| **Production plugin parse + load** | **Cameo SysML v2 plugin** (`SysMLTransientModelBuilder` via `/load-sysml`) | ✅ **full model incl. system architecture loaded, 0 diagnostics** |
 
-> Two independent validators agree: the standalone ANTLR `sysml-validator` and
-> the production Cameo/Dassault textual model builder (which type-checks a
-> transient model and only commits if clean) both accept the model with no errors.
+> Both validators are used because they are not equivalent: the Cameo/Dassault
+> builder is stricter on semantics. It flagged `satisfy <requirement def>` (you
+> must `satisfy` a requirement **usage**, not a definition) — an error the
+> standalone CLI passed. Run both; treat a clean Cameo `/load-sysml` (which
+> type-checks a transient model and only commits if clean) as authoritative.
 
 ### How to run the validator
 
