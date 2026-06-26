@@ -295,20 +295,44 @@ The model was validated with the local **`sysml-validator`** (ANTLR4 grammar +
 semantic engine with full standard-library import resolution):
 
 ```bash
-# run from a dir where ../SysML-v2-Release/sysml.library resolves
+# run from a dir where ../SysML-v2-Release/sysml.library resolves; the
+# -Dds.views.library.path flag enables the bundled DS_Views stub so the
+# rendered views (§ Diagrams) resolve with 0 warnings.
 cd E:/_Documents/git/TutorialForCatiaMagicApiMCP
-java -jar E:/_Documents/git/sysml-validator/validator-cli/target/sysml-validator.jar \
+java -Dds.views.library.path=E:/_Documents/git/sysml-validator/validator-core/src/main/resources/ds_views_stub \
+     -jar E:/_Documents/git/sysml-validator/validator-cli/target/sysml-validator.jar \
      advancedExamples/aircraftRange/version1/AircraftRangePerformance.sysml
 ```
 
-Result: `Semantic validation enabled with 3345 library symbols loaded` →
-`0 errors, 0 warnings` → `VALIDATION PASSED` (exit 0). If the relative library
-path doesn't resolve, the run falls back to grammar-only ("Semantic validation
-disabled"); run from the directory above so semantic checks (imports, types) are
-exercised.
+Result: `Semantic validation enabled with 3370 library symbols loaded` →
+`0 errors, 0 warnings` → `VALIDATION PASSED` (exit 0). Without the DS_Views flag
+the model still passes with 0 errors but reports DS_Views-not-configured warnings
+on the rendered views. If the relative `sysml.library` path doesn't resolve, the
+run falls back to grammar-only ("Semantic validation disabled"); run from the
+directory above so semantic checks (imports, types) are exercised.
 
 Optionally also importable into **Cameo Systems Modeler** (`E:/Magic SW/CMSoS26xR1pr`,
 SysML v2 plugin) via *File ▸ Import ▸ SysML v2 (textual)*.
+
+### Diagrams (rendered views)
+
+The model is structured as **one root package** (`AircraftRangePerformance`, with
+`MathExtensions` nested) so CATIA Magic names the imported namespace cleanly. Its
+`Views` package types every view by a **DS_Views rendering viewpoint** so they render
+as actual diagrams in Cameo (a bare textual `view` is not a diagram):
+
+| View | Viewpoint | Diagram |
+|---|---|---|
+| `parameterDictionaryView`, `fleetDefinitionView`, `equationsView`, `systemDecompositionView` | `SymbolicViews::gv` | definition (BDD-like) |
+| `systemInternalView`, `hybridInternalView` | `SymbolicViews::iv` | internal (IBD: ports & connections) |
+| `flightPhasesStateView` | `SymbolicViews::stv` | state machine |
+| `missionActionView` | `SymbolicViews::afv` | action flow |
+| `requirementsTableView` | `TabularViews::rt` | requirement table |
+| `tradeStudyTableView` | `TabularViews::gt` | generic table |
+
+> When iterating against a live Cameo session, each `/load-sysml` commits into the open
+> project; **undo the prior load (Cameo has full undo) or use a fresh project** before
+> re-loading, rather than letting duplicate root packages accumulate.
 
 ### Regenerate / verify the numbers
 

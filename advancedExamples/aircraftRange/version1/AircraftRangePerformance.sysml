@@ -1,67 +1,67 @@
-/*
- * AircraftRangePerformance.sysml
- * ------------------------------------------------------------------------
- * A reusable SysMLv2 library for aircraft RANGE and ENDURANCE analysis, with
- * the aerodynamic parameters translated from classical symbology into English
- * attribute names, and the governing equations captured as `calc def` elements
- * so the model is executable, not merely descriptive.
- *
- * Source of the physics:  https://en.wikipedia.org/wiki/Range_(aeronautics)
- *
- * Headline conditions (Wikipedia, propeller case):
- *   - MAXIMUM ENDURANCE occurs at the point of MINIMUM POWER REQUIRED
- *     (lowest fuel/energy flow to hold steady level flight).
- *   - MAXIMUM RANGE occurs where speed / power-required is greatest, i.e. at
- *     MAXIMUM LIFT-TO-DRAG RATIO (L/D)max.
- *
- * The five propulsion types (piston-prop, turboprop, open fan, turbofan/jet,
- * electric) collapse onto THREE energy-accounting families:
- *   FAMILY A  Power-producing combustion (piston-prop, turboprop, open fan)
- *             fuel flow ~ SHAFT POWER.  R = (eta_p/(g*c_p))*(L/D)*ln(W_i/W_f)
- *             Max endurance @ min power required;  max range @ (L/D)max.
- *   FAMILY B  Thrust-producing combustion (turbojet / turbofan)
- *             fuel flow ~ THRUST.       R = (V/(g*c_T))*(L/D)*ln(W_i/W_f)
- *             Max endurance @ (L/D)max; max range @ a higher speed.
- *   FAMILY C  Electric (battery) -- mass is CONSTANT, so the log DISAPPEARS:
- *             R = eta_total*E*(m_batt/m_total)*(L/D)/g  (Hepperle).
- *             Max endurance @ min power required;  max range @ (L/D)max.
- *
- * ln(): not in the SysMLv2 standard Kernel Function Library (which has sqrt,
- * **, ^, trig, abs, min/max). It is provided here as MathExtensions::ln, whose
- * body is a Groovy textual representation a scripting-capable tool can execute.
- * The worked examples also pass structuralEfficiency = ln(W_i/W_f) as a
- * precomputed Real so they stay evaluable with stdlib functions alone.
- *
- * Expected values in the worked examples come from the companion oracles
- * reference_calc.py and trade_study_calc.py (run them to regenerate / verify).
- */
-
-package MathExtensions {
-    doc /* Math primitives missing from the SysMLv2 standard Kernel Function Library. */
-    private import ScalarValues::*;
-
-    calc def ln {
-        doc /* Natural logarithm. Not in the SysML v2 standard library, so the
-                implementation is supplied as a Groovy textual representation
-                (below) that a scripting-capable tool can execute. */
-        in x : Real[1];
-        return result : Real[1];
-        rep lnGroovy language "Groovy" /* result = Math.log(x) */
-    }
-
-    calc def exp {
-        doc /* Exponential e^x. Like ln, not in the SysML v2 standard Kernel
-                Function Library, so the implementation is supplied as a Groovy
-                textual representation a scripting-capable tool can execute. Used
-                by the segmented-mission cruise-fuel calc (inverts Breguet). */
-        in x : Real[1];
-        return result : Real[1];
-        rep expGroovy language "Groovy" /* result = Math.exp(x) */
-    }
-}
-
 package AircraftRangePerformance {
-    doc /* Aircraft range & endurance analysis library. See file header. */
+    doc /*
+        AircraftRangePerformance.sysml -- a reusable SysMLv2 library for aircraft
+        RANGE and ENDURANCE analysis, with the aerodynamic parameters translated
+        from classical symbology into English attribute names, and the governing
+        equations captured as calc def elements so the model is executable, not
+        merely descriptive.
+
+        Source of the physics:  https://en.wikipedia.org/wiki/Range_(aeronautics)
+
+        Headline conditions (Wikipedia, propeller case):
+          - MAXIMUM ENDURANCE occurs at the point of MINIMUM POWER REQUIRED
+            (lowest fuel/energy flow to hold steady level flight).
+          - MAXIMUM RANGE occurs where speed / power-required is greatest, i.e.
+            at MAXIMUM LIFT-TO-DRAG RATIO (L/D)max.
+
+        The five propulsion types (piston-prop, turboprop, open fan, turbofan/jet,
+        electric) collapse onto THREE energy-accounting families:
+          FAMILY A  Power-producing combustion (piston-prop, turboprop, open fan)
+                    fuel flow ~ SHAFT POWER.  R = (eta_p/(g*c_p))*(L/D)*ln(W_i/W_f)
+                    Max endurance @ min power required;  max range @ (L/D)max.
+          FAMILY B  Thrust-producing combustion (turbojet / turbofan)
+                    fuel flow ~ THRUST.       R = (V/(g*c_T))*(L/D)*ln(W_i/W_f)
+                    Max endurance @ (L/D)max; max range @ a higher speed.
+          FAMILY C  Electric (battery) -- mass is CONSTANT, so the log DISAPPEARS:
+                    R = eta_total*E*(m_batt/m_total)*(L/D)/g  (Hepperle).
+                    Max endurance @ min power required;  max range @ (L/D)max.
+
+        ln()/exp() are not in the SysMLv2 standard Kernel Function Library (which
+        has sqrt, the power operators, trig, abs, min/max); they are provided in
+        the nested MathExtensions package as Groovy textual representations a
+        scripting-capable tool can execute. The worked examples also pass
+        structuralEfficiency = ln(W_i/W_f) as a precomputed Real so they stay
+        evaluable with stdlib functions alone.
+
+        Expected values in the worked examples come from the companion oracles
+        reference_calc.py, trade_study_calc.py, and mission_calc.py.
+        */
+
+    /* MathExtensions is NESTED so this file has exactly ONE package in the root
+       namespace -- CATIA Magic names the namespace after the first root element. */
+    package MathExtensions {
+        doc /* Math primitives missing from the SysMLv2 standard Kernel Function Library. */
+        private import ScalarValues::*;
+
+        calc def ln {
+            doc /* Natural logarithm. Not in the SysML v2 standard library, so the
+                    implementation is supplied as a Groovy textual representation
+                    (below) that a scripting-capable tool can execute. */
+            in x : Real[1];
+            return result : Real[1];
+            rep lnGroovy language "Groovy" /* result = Math.log(x) */
+        }
+
+        calc def exp {
+            doc /* Exponential e^x. Like ln, not in the SysML v2 standard Kernel
+                    Function Library, so the implementation is supplied as a Groovy
+                    textual representation a scripting-capable tool can execute. Used
+                    by the segmented-mission cruise-fuel calc (inverts Breguet). */
+            in x : Real[1];
+            return result : Real[1];
+            rep expGroovy language "Groovy" /* result = Math.exp(x) */
+        }
+    }
 
     /* Standard-library imports: scalar values, ISQ quantity types, SI units,
        real math functions (sqrt, ** , ^), and the local natural log. */
@@ -1937,11 +1937,19 @@ package AircraftRangePerformance {
     /* ====================================================================
      * 12. VIEWS
      * ==================================================================== */
+    /* Views are typed by DS_Views rendering viewpoints so they render as ACTUAL
+       diagrams when loaded into CATIA Magic / Cameo (a textual `view` with no
+       rendering viewpoint is not a diagram):
+         gv = definition (BDD-like)   iv = internal (IBD-like: ports & connections)
+         stv = state machine          afv = action flow
+         rt = requirement table       gt = generic table
+       DS_Views is Cameo's built-in library; the standalone validator resolves it
+       from its bundled stub via -Dds.views.library.path. */
     package Views {
         private import AircraftRangePerformance::*;
 
-        view parameterDictionaryView {
-            doc /* The symbology -> English parameter definitions. */
+        view parameterDictionaryView : DS_Views::SymbolicViews::gv {
+            doc /* Symbology -> English parameter definitions (definition diagram). */
             expose Aircraft;
             expose PowerProducingAircraft;
             expose ThrustProducingAircraft;
@@ -1949,13 +1957,8 @@ package AircraftRangePerformance {
             expose TransportAircraft;
         }
 
-        view equationsView {
-            doc /* All governing calc defs (aero core, characteristic speeds, range/endurance, weight budget). */
-            expose AircraftRangePerformance::*;
-        }
-
-        view fleetView {
-            doc /* The 110-pax / 5-crew transport fleet, one per propulsion type. */
+        view fleetDefinitionView : DS_Views::SymbolicViews::gv {
+            doc /* The 110-pax / 5-crew fleet, one per propulsion type (BDD-style). */
             expose JetLiner110;
             expose OpenFan110;
             expose TurboProp110;
@@ -1963,23 +1966,60 @@ package AircraftRangePerformance {
             expose HybridElectric110;
         }
 
-        view tradeStudyView {
-            doc /* The payload-range trade-study scenarios across the fleet. */
+        view equationsView : DS_Views::SymbolicViews::gv {
+            doc /* All governing calc defs (aero core, speeds, range/endurance, mission). */
+            expose AircraftRangePerformance::*;
+        }
+
+        view systemDecompositionView : DS_Views::SymbolicViews::gv {
+            doc /* Airplane system subsystem decomposition (definition diagram). */
+            expose AirplaneSystem;
+            expose Airframe;
+            expose PropulsionSystem;
+            expose EnergyStorageSystem;
+            expose Avionics;
+            expose FlightControlSystem;
+            expose ElectricalSystem;
+            expose CabinPayloadSystem;
+        }
+
+        view systemInternalView : DS_Views::SymbolicViews::iv {
+            doc /* Airplane system internal structure: subsystems wired by ports and
+                    connections (IBD-style). */
+            expose AirplaneSystem;
+        }
+
+        view hybridInternalView : DS_Views::SymbolicViews::iv {
+            doc /* Hybrid system internals, including the turbogenerator -> electrical
+                    bus connection. */
+            expose HybridSystem;
+        }
+
+        view flightPhasesStateView : DS_Views::SymbolicViews::stv {
+            doc /* Flight-phase state machine: parked -> taxi -> takeoff -> climb ->
+                    cruise -> descent -> approach -> landing. */
+            expose AirplaneSystem;
+        }
+
+        view missionActionView : DS_Views::SymbolicViews::afv {
+            doc /* Mission action sequence: startUp -> taxiOut -> ... -> shutDown. */
+            expose AirplaneSystem;
+        }
+
+        view requirementsTableView : DS_Views::TabularViews::rt {
+            doc /* Requirement table: design targets + system capability requirements. */
+            expose Requirements;
+            expose SystemRequirements;
+        }
+
+        view tradeStudyTableView : DS_Views::TabularViews::gt {
+            doc /* Payload-range + mission trade-study scenarios as a table. */
             expose JetLiner110_TradeStudy;
             expose OpenFan110_TradeStudy;
             expose TurboProp110_TradeStudy;
             expose PistonLiner110_TradeStudy;
             expose HybridElectric110_TradeStudy;
-        }
-
-        view systemArchitectureView {
-            doc /* The airplane-as-a-system: base decomposition and the five type-specific systems. */
-            expose AirplaneSystem;
-            expose JetLinerSystem;
-            expose OpenFanSystem;
-            expose TurboPropSystem;
-            expose PistonSystem;
-            expose HybridSystem;
+            expose MissionTradeStudy;
         }
     }
 }
