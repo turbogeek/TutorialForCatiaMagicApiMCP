@@ -11,6 +11,7 @@ Source of the physics: <https://en.wikipedia.org/wiki/Range_(aeronautics)>
 | [`AircraftRangePerformance.sysml`](AircraftRangePerformance.sysml) | The SysMLv2 model (parts + calc defs + worked analyses + **110-pax trade studies** + requirements + views). |
 | [`reference_calc.py`](reference_calc.py) | Python oracle — a 1:1 mirror of every `calc def`. Verifies the math and generates the expected numbers embedded in the model. |
 | [`trade_study_calc.py`](trade_study_calc.py) | Trade-study oracle — weight budget + payload/fuel/cargo scenarios; generates the trade-study numbers. |
+| [`mission_calc.py`](mission_calc.py) | Mission-sizing oracle — segmented DFW→LAX fuel-fraction / energy sizing, feasibility, and the engineering studies. |
 
 ---
 
@@ -215,6 +216,53 @@ part def HybridSystem :> HybridElectric110, AirplaneSystem {
 > The mass rollup is the bridge between layers: subsystem masses (illustrative, summing to each
 > type's OEW) feed the same `operatingEmptyWeight` that the §8 weight budget and §10 range trade
 > studies depend on.
+
+---
+
+## 3d. Mission sizing — required fuel for a defined flight (§14)
+
+§14 turns the model around: instead of *fuel → range*, it computes *mission + payload → required
+fuel*, then checks feasibility. The standard flight is **Dallas DFW → Los Angeles LAX**
+(~1,990 km / 1,074 nm great circle, FL370 cruise, 250 nm reserve), parameterized via a `Mission`
+part def so any city pair / aircraft works (`mission_calc.py` is the oracle).
+
+**Method — fuel-fraction sizing (Roskam/Raymer).** The 7 phases each carry a weight fraction
+`W_end/W_start`. Terminal phases use fixed fractions (taxi-out 0.990, takeoff 0.995, climb 0.980,
+descent 0.990, approach/land 0.992, taxi-in 0.997); **cruise and reserve invert the Breguet range
+equation** (which needs `exp` — a second Groovy `rep` alongside `ln`):
+
+```
+f_cruise = exp(−d·g·c_T / (V·L/D))                  [jet]   /  …c_p/(η_p·L/D)  [prop]
+requiredBlockFuel = ZFW · (1/∏ fractions − 1),   ZFW = OEW + crew + pax + cargo
+```
+
+The series-hybrid instead solves an **energy balance** for generator fuel (battery mass is constant):
+`k·(Z+½·fuel)·g·R/(L/D) = η_drive·(E_batt + η_gen·fuel·LHV)`. Feasibility is a `constraint def
+MissionFeasibility` (`fuel ≤ tank ∧ TOW ≤ MTOW ∧ ZFW ≤ MZFW`), `assert`ed per aircraft.
+
+**DFW→LAX at full pax (110) + 5 crew + 2 t cargo:**
+
+| Aircraft | Block fuel | Tank | TOW / MTOW | Verdict |
+|---|---|---|---|---|
+| JetLiner110 (turbofan) | 6,492 kg | 17,300 | 56,037 / 63,100 | ✅ feasible |
+| OpenFan110 (open fan) | 5,513 kg | 15,000 | 55,558 / 63,100 | ✅ feasible, **lowest burn (−15 %)** |
+| TurboProp110 | 7,048 kg | 5,000 | — | ❌ **infeasible — fuel > tank** |
+| PistonLiner110 (piston) | 8,995 kg | 12,000 | 48,240 / 48,500 | ⚠️ feasible but **260 kg under MTOW** |
+| HybridElectric110 | 3,045 kg + 14 t battery | 8,000 | 65,290 / 72,000 | ✅ feasible (~45 % electric) |
+
+**Engineering decisions the trade study exposes** (`MissionTradeStudy`):
+- **Open fan vs turbofan** — same mission, ~15 % less fuel → fleet fuel-cost driver.
+- **Turboprop** — cannot serve DFW→LAX nonstop at full pax (regional-only) → route-network decision.
+- **Piston** — feasible only with no MTOW margin → not certifiable with real reserves today.
+- **Hybrid** — battery-only reaches just **1,187 km of the 1,990 km route (60 %)**; the turbogenerator
+  is what closes the mission. A battery-mass sweep shows ~14 t is the sweet spot — bigger batteries
+  hit **MZFW (18 t)** then **MTOW (22 t)** before the fuel saving pays off. Powertrain-sizing decision.
+- **Max cargo on the mission** is **MZFW-limited** for the jets/hybrid (~3.2 t) and **MTOW-limited**
+  for the piston (~2.2 t) — which structural limit binds is itself a design output.
+
+> Ranges/fuels are conceptual-design estimates (idealized cruise at (L/D)max, simplified reserve);
+> subtract margin for a certified flight plan. Independently reproduced by a second method during
+> review (both converged on 6,492 kg for the jet).
 
 ---
 

@@ -48,6 +48,16 @@ package MathExtensions {
         return result : Real[1];
         rep lnGroovy language "Groovy" /* result = Math.log(x) */
     }
+
+    calc def exp {
+        doc /* Exponential e^x. Like ln, not in the SysML v2 standard Kernel
+                Function Library, so the implementation is supplied as a Groovy
+                textual representation a scripting-capable tool can execute. Used
+                by the segmented-mission cruise-fuel calc (inverts Breguet). */
+        in x : Real[1];
+        return result : Real[1];
+        rep expGroovy language "Groovy" /* result = Math.exp(x) */
+    }
 }
 
 package AircraftRangePerformance {
@@ -755,7 +765,11 @@ package AircraftRangePerformance {
             doc /* belly structural cargo limit */
         }
         attribute maxPayload : MassValue {
-            doc /* max revenue payload = MZFW - OEW */
+            doc /* max revenue payload = MZFW - OEW - crew */
+        }
+        attribute maxZeroFuelWeight : MassValue {
+            doc /* MZFW -- structural limit on (OEW + crew + payload); fuel must keep the
+                    landing weight feasible. Reached at max payload. */
         }
         attribute designPassengers : Real = 110.0 {
             doc /* design passenger count */
@@ -811,6 +825,7 @@ package AircraftRangePerformance {
         attribute redefines maxFuelCapacity = 17300.0 [kg];
         attribute redefines maxCargoMass = 6000.0 [kg];
         attribute redefines maxPayload = 15000.0 [kg];
+        attribute redefines maxZeroFuelWeight = 50775.0 [kg];
         attribute redefines referenceWingArea = 112.3 ['m²'];
         attribute redefines wingSpan = 35.1 [m];
         attribute redefines aspectRatio = 10.97;
@@ -830,6 +845,7 @@ package AircraftRangePerformance {
         attribute redefines maxFuelCapacity = 15000.0 [kg];
         attribute redefines maxCargoMass = 6000.0 [kg];
         attribute redefines maxPayload = 15000.0 [kg];
+        attribute redefines maxZeroFuelWeight = 51275.0 [kg];
         attribute redefines referenceWingArea = 112.3 ['m²'];
         attribute redefines wingSpan = 35.1 [m];
         attribute redefines aspectRatio = 10.97;
@@ -850,6 +866,7 @@ package AircraftRangePerformance {
         attribute redefines maxFuelCapacity = 5000.0 [kg];
         attribute redefines maxCargoMass = 4000.0 [kg];
         attribute redefines maxPayload = 13000.0 [kg];
+        attribute redefines maxZeroFuelWeight = 33475.0 [kg];
         attribute redefines referenceWingArea = 95.0 ['m²'];
         attribute redefines wingSpan = 33.0 [m];
         attribute redefines aspectRatio = 11.463;
@@ -870,6 +887,7 @@ package AircraftRangePerformance {
         attribute redefines maxFuelCapacity = 12000.0 [kg];
         attribute redefines maxCargoMass = 5000.0 [kg];
         attribute redefines maxPayload = 16000.0 [kg];
+        attribute redefines maxZeroFuelWeight = 41475.0 [kg];
         attribute redefines referenceWingArea = 135.9 ['m²'];
         attribute redefines wingSpan = 35.8 [m];
         attribute redefines aspectRatio = 9.430;
@@ -893,6 +911,7 @@ package AircraftRangePerformance {
         attribute redefines maxFuelCapacity = 8000.0 [kg];
         attribute redefines maxCargoMass = 5000.0 [kg];
         attribute redefines maxPayload = 15000.0 [kg];
+        attribute redefines maxZeroFuelWeight = 63475.0 [kg];
         attribute redefines referenceWingArea = 112.3 ['m²'];
         attribute redefines wingSpan = 35.1 [m];
         attribute redefines aspectRatio = 10.97;
@@ -1479,6 +1498,376 @@ package AircraftRangePerformance {
             attribute redefines mass = 3000.0 [kg];
         }
         connection generatorToBus connect propulsion.generatorOutput to electrical.powerBus;
+    }
+
+    /* ====================================================================
+     * 14. MISSION ANALYSIS & FUEL SIZING  (taxi-takeoff-climb-cruise-descend-
+     *     land: from a payload on a defined mission, compute the REQUIRED fuel)
+     *     Method: fuel-fraction sizing (Roskam/Raymer) for combustion; energy
+     *     balance for the series-hybrid. Cruise & reserve invert the Breguet
+     *     range equation (need MathExtensions::exp). Numbers from mission_calc.py.
+     *     Standard mission = Dallas DFW -> Los Angeles LAX (~1990 km / 1074 nm),
+     *     parameterized so other city pairs / aircraft work.
+     * ==================================================================== */
+
+    /* The 6 terminal-phase weight fractions W_end/W_start (cruise & reserve are
+       computed per aircraft from the Breguet inversion). Product = 0.94521. */
+    part def StandardSegmentFractions {
+        doc /* Roskam transport-jet terminal fuel fractions. */
+        attribute taxiOut : Real = 0.990 {
+            doc /* engine start + taxi-out */
+        }
+        attribute takeoff : Real = 0.995 {
+            doc /* takeoff roll + initial climb */
+        }
+        attribute climb : Real = 0.980 {
+            doc /* climb to cruise altitude */
+        }
+        attribute descent : Real = 0.990 {
+            doc /* descent from cruise */
+        }
+        attribute approachLand : Real = 0.992 {
+            doc /* approach + landing */
+        }
+        attribute taxiIn : Real = 0.997 {
+            doc /* taxi-in + shutdown */
+        }
+    }
+
+    calc def CruiseWeightFractionJet {
+        doc /* Weight fraction W_end/W_start to fly `distance` in jet cruise --
+                the inverted Breguet range equation:
+                  f = exp( -distance * g * c_T / (V * (L/D)) ).
+                Inputs SI: distance [m], gravity g [m/s^2], thrustSpecificFuelConsumption
+                c_T [kg/(N*s)], airspeed V [m/s], liftToDrag. Returns [dimensionless]. */
+        in distance : Real;
+        in gravity : Real;
+        in thrustSpecificFuelConsumption : Real;
+        in airspeed : Real;
+        in liftToDrag : Real;
+        return fraction : Real =
+            exp(-distance * gravity * thrustSpecificFuelConsumption / (airspeed * liftToDrag));
+    }
+
+    calc def CruiseWeightFractionProp {
+        doc /* Weight fraction for power-producing cruise (prop / turboprop / open fan):
+                  f = exp( -distance * g * c_p / (eta_p * (L/D)) ).
+                Inputs SI: distance [m], gravity, powerSpecificFuelConsumption c_p [kg/(W*s)],
+                propulsiveEfficiency eta_p, liftToDrag. Returns [dimensionless]. */
+        in distance : Real;
+        in gravity : Real;
+        in powerSpecificFuelConsumption : Real;
+        in propulsiveEfficiency : Real;
+        in liftToDrag : Real;
+        return fraction : Real =
+            exp(-distance * gravity * powerSpecificFuelConsumption / (propulsiveEfficiency * liftToDrag));
+    }
+
+    calc def MissionFuelFraction {
+        doc /* Product of the eight segment weight fractions (6 terminal + cruise + reserve).
+                W_land+reserve / W_takeoff. [dimensionless] */
+        in fTaxiOut : Real;
+        in fTakeoff : Real;
+        in fClimb : Real;
+        in fCruise : Real;
+        in fDescent : Real;
+        in fApproach : Real;
+        in fTaxiIn : Real;
+        in fReserve : Real;
+        return fraction : Real =
+            fTaxiOut * fTakeoff * fClimb * fCruise * fDescent * fApproach * fTaxiIn * fReserve;
+    }
+
+    calc def ZeroFuelMass {
+        doc /* ZFW = OEW + crew + passengers + cargo (for the hybrid, OEW already
+                includes the installed battery via the analysis). Inputs [kg]. Returns [kg]. */
+        in operatingEmptyWeight : Real;
+        in crewPayload : Real;
+        in passengerPayload : Real;
+        in cargoMass : Real;
+        return zeroFuelMass : Real =
+            operatingEmptyWeight + crewPayload + passengerPayload + cargoMass;
+    }
+
+    calc def RequiredBlockFuel {
+        doc /* Fuel-fraction sizing inverse: the block+reserve fuel needed to fly the
+                mission at a given zero-fuel weight:
+                  fuel = zeroFuelMass * (1/missionFuelFraction - 1).  [kg] */
+        in zeroFuelMass : Real;
+        in missionFuelFraction : Real;
+        return blockFuel : Real = zeroFuelMass * (1.0 / missionFuelFraction - 1.0);
+    }
+
+    calc def MissionTakeoffMass {
+        doc /* Takeoff weight = zero-fuel weight + block fuel. [kg] */
+        in zeroFuelMass : Real;
+        in blockFuel : Real;
+        return takeoffMass : Real = zeroFuelMass + blockFuel;
+    }
+
+    calc def HybridMissionFuel {
+        doc /* Series-hybrid generator fuel for a mission, from the energy balance
+                (battery mass constant, fuel burns off; terminal-power uplift k):
+                  k*(Z + 0.5*fuel)*g*R/(L/D) = eta_drive*(E_batt + eta_gen*fuel*LHV)
+                solved for fuel, with C = k*g*R/(L/D):
+                  fuel = (eta_drive*E_batt - Z*C) / (0.5*C - eta_drive*eta_gen*LHV).
+                Inputs SI: zeroFuelMass Z [kg] (incl. battery), batteryEnergy E_batt [J],
+                driveEfficiency, generatorEfficiency, fuelHeatingValue LHV [J/kg],
+                gravity, totalRange R [m] (mission+reserve), liftToDrag, terminalUplift k.
+                Returns generator fuel [kg]. */
+        in zeroFuelMass : Real;
+        in batteryEnergy : Real;
+        in driveEfficiency : Real;
+        in generatorEfficiency : Real;
+        in fuelHeatingValue : Real;
+        in gravity : Real;
+        in totalRange : Real;
+        in liftToDrag : Real;
+        in terminalUplift : Real;
+        return fuelMass : Real =
+            (driveEfficiency * batteryEnergy
+             - zeroFuelMass * (terminalUplift * gravity * totalRange / liftToDrag))
+            / (0.5 * (terminalUplift * gravity * totalRange / liftToDrag)
+               - driveEfficiency * generatorEfficiency * fuelHeatingValue);
+    }
+
+    calc def PureElectricReach {
+        doc /* Distance reachable on the battery alone (no generator fuel):
+                  reach = eta_drive * E_batt * (L/D) / (Z * g).  [m] */
+        in driveEfficiency : Real;
+        in batteryEnergy : Real;
+        in liftToDrag : Real;
+        in zeroFuelMass : Real;
+        in gravity : Real;
+        return reach : Real =
+            driveEfficiency * batteryEnergy * liftToDrag / (zeroFuelMass * gravity);
+    }
+
+    constraint def MissionFeasibility {
+        doc /* The mission closes iff the required fuel fits the tank and the weights
+                stay within structural limits. */
+        in requiredFuel : Real;
+        in fuelCapacity : Real;
+        in takeoffMass : Real;
+        in maxTakeoffWeight : Real;
+        in zeroFuelMass : Real;
+        in maxZeroFuelWeight : Real;
+        requiredFuel <= fuelCapacity
+            and takeoffMass <= maxTakeoffWeight
+            and zeroFuelMass <= maxZeroFuelWeight
+    }
+
+    /* ---- parameterized mission (reusable for any city pair / aircraft) ---- */
+    part def FlightSegment {
+        doc /* One mission phase, with the distance it covers and (for terminal
+                phases) its standard weight fraction. */
+        attribute segmentName : String;
+        attribute groundDistance : LengthValue;
+        attribute weightFraction : Real;
+    }
+
+    part def Mission {
+        doc /* A point-to-point mission as the ordered set of 7 flight phases plus a
+                reserve allowance. missionRange is the great-circle distance; cruise
+                covers it minus the terminal ground coverage. */
+        attribute missionRange : LengthValue;
+        attribute reserveRange : LengthValue;
+        attribute cruiseDistance : LengthValue;
+        part taxiOut : FlightSegment;
+        part takeoff : FlightSegment;
+        part climb : FlightSegment;
+        part cruise : FlightSegment;
+        part descent : FlightSegment;
+        part approachLand : FlightSegment;
+        part taxiIn : FlightSegment;
+    }
+
+    part DallasToLosAngeles : Mission {
+        doc /* Standard flight DFW -> LAX: 1990 km / 1074 nm great circle, FL370 cruise,
+                250 nm reserve. Cruise distance 1620 km (terminals fly ~370 km). */
+        attribute redefines missionRange = 1990.0 [km];
+        attribute redefines reserveRange = 463.0 [km];
+        attribute redefines cruiseDistance = 1620.0 [km];
+        part redefines climb {
+            attribute redefines groundDistance = 220.0 [km];
+            attribute redefines weightFraction = 0.980;
+        }
+        part redefines cruise {
+            attribute redefines groundDistance = 1620.0 [km];
+        }
+        part redefines descent {
+            attribute redefines groundDistance = 110.0 [km];
+            attribute redefines weightFraction = 0.990;
+        }
+    }
+
+    /* ---- per-aircraft DFW->LAX sizing (calc usages = the calculation) ----
+       Cabin: 110 pax (11,770 kg) + 5 crew (475 kg) + 2,000 kg nominal cargo. */
+
+    package JetLiner110_DFWLAX {
+        doc /* Turbofan on DFW->LAX. FEASIBLE: fuel 6,492 kg << tank 17,300 kg;
+                TOW 56,037 << MTOW 63,100; ZFW 49,545 <= MZFW 50,775. */
+        private import AircraftRangePerformance::*;
+        calc cruiseFraction : CruiseWeightFractionJet {
+            doc /* cruise 1,620 km -> expect 0.94939 */
+            in distance = 1620000.0;  in gravity = 9.80665;  in thrustSpecificFuelConsumption = 1.45e-5;
+            in airspeed = 230.0;  in liftToDrag = 19.284;
+        }
+        calc reserveFraction : CruiseWeightFractionJet {
+            doc /* reserve 463 km -> expect 0.98527 */
+            in distance = 463000.0;  in gravity = 9.80665;  in thrustSpecificFuelConsumption = 1.45e-5;
+            in airspeed = 230.0;  in liftToDrag = 19.284;
+        }
+        calc missionFraction : MissionFuelFraction {
+            doc /* expect 0.88415 */
+            in fTaxiOut = 0.990;  in fTakeoff = 0.995;  in fClimb = 0.980;  in fCruise = 0.94939;
+            in fDescent = 0.990;  in fApproach = 0.992;  in fTaxiIn = 0.997;  in fReserve = 0.98527;
+        }
+        calc zeroFuel : ZeroFuelMass {
+            doc /* expect 49,545 kg */
+            in operatingEmptyWeight = 35300.0;  in crewPayload = 475.0;
+            in passengerPayload = 11770.0;  in cargoMass = 2000.0;
+        }
+        calc blockFuel : RequiredBlockFuel {
+            doc /* expect 6,492 kg */
+            in zeroFuelMass = 49545.0;  in missionFuelFraction = 0.88415;
+        }
+        calc takeoffMass : MissionTakeoffMass {
+            doc /* expect 56,037 kg */
+            in zeroFuelMass = 49545.0;  in blockFuel = 6492.0;
+        }
+        assert constraint feasible : MissionFeasibility {
+            in requiredFuel = 6492.0;  in fuelCapacity = 17300.0;
+            in takeoffMass = 56037.0;  in maxTakeoffWeight = 63100.0;
+            in zeroFuelMass = 49545.0;  in maxZeroFuelWeight = 50775.0;
+        }
+    }
+
+    package OpenFan110_DFWLAX {
+        doc /* Open fan on DFW->LAX. FEASIBLE and most efficient: fuel 5,513 kg
+                (~15% below the turbofan); TOW 55,558 << MTOW 63,100. */
+        private import AircraftRangePerformance::*;
+        calc cruiseFraction : CruiseWeightFractionProp {
+            doc /* cruise 1,620 km -> expect 0.96325 */
+            in distance = 1620000.0;  in gravity = 9.80665;  in powerSpecificFuelConsumption = 4.0e-8;
+            in propulsiveEfficiency = 0.88;  in liftToDrag = 19.284;
+        }
+        calc blockFuel : RequiredBlockFuel {
+            doc /* f_total 0.90077 -> expect 5,513 kg */
+            in zeroFuelMass = 50045.0;  in missionFuelFraction = 0.90077;
+        }
+        assert constraint feasible : MissionFeasibility {
+            in requiredFuel = 5513.0;  in fuelCapacity = 15000.0;
+            in takeoffMass = 55558.0;  in maxTakeoffWeight = 63100.0;
+            in zeroFuelMass = 50045.0;  in maxZeroFuelWeight = 51275.0;
+        }
+    }
+
+    package TurboProp110_DFWLAX {
+        doc /* Turboprop on DFW->LAX: INFEASIBLE at full pax. Required fuel 7,048 kg
+                exceeds the 5,000 kg tank (and at 2 t cargo TOW 41,293 > MTOW 36,500,
+                ZFW 34,245 > MZFW 33,475). ENGINEERING DECISION: a 110-seat turboprop
+                is a regional aircraft -- DFW->LAX needs reduced pax/cargo or a fuel
+                stop. (No feasibility assertion: it does not close.) */
+        private import AircraftRangePerformance::*;
+        calc cruiseFraction : CruiseWeightFractionProp {
+            doc /* cruise 1,620 km -> expect 0.90328 */
+            in distance = 1620000.0;  in gravity = 9.80665;  in powerSpecificFuelConsumption = 9.0e-8;
+            in propulsiveEfficiency = 0.85;  in liftToDrag = 16.536;
+        }
+        calc blockFuel : RequiredBlockFuel {
+            doc /* f_total 0.82932 -> expect 7,048 kg (> 5,000 kg tank => INFEASIBLE) */
+            in zeroFuelMass = 34245.0;  in missionFuelFraction = 0.82932;
+        }
+    }
+
+    package PistonLiner110_DFWLAX {
+        doc /* Piston airliner on DFW->LAX: FEASIBLE but tight -- fuel 8,995 kg <= tank
+                12,000; TOW 48,240 only 260 kg under MTOW 48,500. Slow (~3.8 h cruise). */
+        private import AircraftRangePerformance::*;
+        calc cruiseFraction : CruiseWeightFractionProp {
+            doc /* cruise 1,620 km -> expect 0.88988 */
+            in distance = 1620000.0;  in gravity = 9.80665;  in powerSpecificFuelConsumption = 8.5e-8;
+            in propulsiveEfficiency = 0.82;  in liftToDrag = 14.115;
+        }
+        calc blockFuel : RequiredBlockFuel {
+            doc /* f_total 0.81353 -> expect 8,995 kg */
+            in zeroFuelMass = 39245.0;  in missionFuelFraction = 0.81353;
+        }
+        assert constraint feasible : MissionFeasibility {
+            in requiredFuel = 8995.0;  in fuelCapacity = 12000.0;
+            in takeoffMass = 48240.0;  in maxTakeoffWeight = 48500.0;
+            in zeroFuelMass = 39245.0;  in maxZeroFuelWeight = 41475.0;
+        }
+    }
+
+    package HybridElectric110_DFWLAX {
+        doc /* Series-hybrid on DFW->LAX. FEASIBLE: 14,000 kg battery + 3,045 kg generator
+                fuel; TOW 65,290 << MTOW 72,000. Energy ~45% battery / 55% fuel.
+                Pure-electric reach is only 1,187 km of the 1,990 km route (~60%) ->
+                a battery-only 110-seat DFW->LAX is INFEASIBLE; the turbogenerator is
+                what closes the mission. ENGINEERING DECISION: size battery vs generator. */
+        private import AircraftRangePerformance::*;
+        calc generatorFuel : HybridMissionFuel {
+            doc /* expect 3,045 kg (battery 14,000 kg, E_batt 4.284e10 J, R 2,453 km) */
+            in zeroFuelMass = 62245.0;  in batteryEnergy = 4.2840e10;
+            in driveEfficiency = 0.90;  in generatorEfficiency = 0.40;
+            in fuelHeatingValue = 43000000.0;  in gravity = 9.80665;
+            in totalRange = 2453000.0;  in liftToDrag = 18.796;  in terminalUplift = 1.05;
+        }
+        calc batteryReach : PureElectricReach {
+            doc /* expect 1.187e6 m = 1,187 km (< 1,990 km mission) */
+            in driveEfficiency = 0.90;  in batteryEnergy = 4.2840e10;
+            in liftToDrag = 18.796;  in zeroFuelMass = 62245.0;  in gravity = 9.80665;
+        }
+        assert constraint feasible : MissionFeasibility {
+            in requiredFuel = 3045.0;  in fuelCapacity = 8000.0;
+            in takeoffMass = 65290.0;  in maxTakeoffWeight = 72000.0;
+            in zeroFuelMass = 62245.0;  in maxZeroFuelWeight = 63475.0;
+        }
+    }
+
+    /* ---- mission trade study: which configuration for DFW->LAX, and why ---- */
+    package MissionTradeStudy {
+        doc /* DFW->LAX (110 pax + 5 crew + 2,000 kg cargo) -- block fuel / feasibility:
+                  JetLiner110     6,492 kg   FEASIBLE (10,808 kg fuel margin)
+                  OpenFan110      5,513 kg   FEASIBLE, lowest burn (-15% vs jet)
+                  TurboProp110    7,048 kg   INFEASIBLE (tank 5,000 kg) -> regional only
+                  PistonLiner110  8,995 kg   FEASIBLE but tight (260 kg under MTOW), slow
+                  HybridElectric  3,045 kg + 14 t battery  FEASIBLE (~45% electric)
+
+                MAX CARGO that still closes DFW->LAX (full pax): Jet & OpenFan & Hybrid
+                ~3,231 kg (MZFW-limited); Piston ~2,212 kg (MTOW-limited); TurboProp none.
+
+                STUDY (i) payload vs achievable range (full tank): e.g. JetLiner110
+                0 cargo 6,978 km / +max cargo 4,928 km; OpenFan 9,224 / 6,447 km;
+                TurboProp 984 / 388 km (confirms regional); Hybrid 4,151 / 3,930 km.
+
+                STUDY (ii) hybrid battery-mass sweep (DFW->LAX): 8 t batt -> 3,616 kg
+                fuel; 14 t -> 3,045 kg; 18 t -> INFEASIBLE (ZFW>MZFW); 22 t -> TOW>MTOW.
+                DECISION: ~14 t battery is the sweet spot -- larger batteries hit the
+                weight limits before the fuel saving pays off.
+
+                ENGINEERING DECISIONS exposed:
+                  - Open fan vs turbofan: same mission, ~15% less fuel -> fleet fuel cost.
+                  - Turboprop: cannot serve DFW->LAX nonstop at full pax -> route network.
+                  - Piston: feasible only with no reserve margin -> not certifiable today.
+                  - Hybrid: needs the generator (battery-only infeasible); battery sized
+                    by MZFW/MTOW, not by range. */
+        private import AircraftRangePerformance::*;
+
+        calc jetMaxCargoZfw : ZeroFuelMass {
+            doc /* max-cargo ZFW at the MZFW limit -> 50,775 kg (cargo 3,231 kg) */
+            in operatingEmptyWeight = 35300.0;  in crewPayload = 475.0;
+            in passengerPayload = 11770.0;  in cargoMass = 3231.0;
+        }
+        calc hybridBatterySweep_18t : HybridMissionFuel {
+            doc /* 18 t battery -> 2,664 kg fuel but ZFW 66,245 > MZFW 63,475 => INFEASIBLE */
+            in zeroFuelMass = 66245.0;  in batteryEnergy = 5.5080e10;
+            in driveEfficiency = 0.90;  in generatorEfficiency = 0.40;
+            in fuelHeatingValue = 43000000.0;  in gravity = 9.80665;
+            in totalRange = 2453000.0;  in liftToDrag = 18.796;  in terminalUplift = 1.05;
+        }
     }
 
     /* ====================================================================
