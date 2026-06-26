@@ -244,14 +244,16 @@ MissionFeasibility` (`fuel ≤ tank ∧ TOW ≤ MTOW ∧ ZFW ≤ MZFW`), `assert
 
 | Aircraft | Block fuel | Tank | TOW / MTOW | Verdict |
 |---|---|---|---|---|
-| JetLiner110 (turbofan) | 6,492 kg | 17,300 | 56,037 / 63,100 | ✅ feasible |
-| OpenFan110 (open fan) | 5,513 kg | 15,000 | 55,558 / 63,100 | ✅ feasible, **lowest burn (−15 %)** |
+| JetLiner110 (turbofan) | 7,074 kg | 17,300 | 56,619 / 63,100 | ✅ feasible |
+| OpenFan110 (open fan) | 5,513 kg | 15,000 | 55,558 / 63,100 | ✅ feasible, **lowest burn (−22 %)** |
 | TurboProp110 | 7,048 kg | 5,000 | — | ❌ **infeasible — fuel > tank** |
 | PistonLiner110 (piston) | 8,995 kg | 12,000 | 48,240 / 48,500 | ⚠️ feasible but **260 kg under MTOW** |
 | HybridElectric110 | 3,045 kg + 14 t battery | 8,000 | 65,290 / 72,000 | ✅ feasible (~45 % electric) |
 
 **Engineering decisions the trade study exposes** (`MissionTradeStudy`):
-- **Open fan vs turbofan** — same mission, ~15 % less fuel → fleet fuel-cost driver.
+- **Open fan vs turbofan** — same mission, ~22 % less fuel → fleet fuel-cost driver. (The
+  turbofan cruises at its max-range L/D ≈ 0.87·(L/D)max; the power-producing open fan cruises at
+  (L/D)max — part of the gap.)
 - **Turboprop** — cannot serve DFW→LAX nonstop at full pax (regional-only) → route-network decision.
 - **Piston** — feasible only with no MTOW margin → not certifiable with real reserves today.
 - **Hybrid** — battery-only reaches just **1,187 km of the 1,990 km route (60 %)**; the turbogenerator
@@ -260,9 +262,11 @@ MissionFeasibility` (`fuel ≤ tank ∧ TOW ≤ MTOW ∧ ZFW ≤ MZFW`), `assert
 - **Max cargo on the mission** is **MZFW-limited** for the jets/hybrid (~3.2 t) and **MTOW-limited**
   for the piston (~2.2 t) — which structural limit binds is itself a design output.
 
-> Ranges/fuels are conceptual-design estimates (idealized cruise at (L/D)max, simplified reserve);
-> subtract margin for a certified flight plan. Independently reproduced by a second method during
-> review (both converged on 6,492 kg for the jet).
+> Ranges/fuels are conceptual-design estimates (best-range cruise — (L/D)max for power-producing
+> families, ~0.87·(L/D)max for the turbofan — simplified reserve); subtract margin for a certified
+> flight plan. An adversarial review verified every embedded number and the hybrid algebra, and
+> flagged that the jet cruise should use its max-range L/D (≈16.70, not (L/D)max) — applied here,
+> raising the jet from 6,492 → 7,074 kg.
 
 ---
 

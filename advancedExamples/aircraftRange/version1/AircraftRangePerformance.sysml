@@ -1539,7 +1539,10 @@ package AircraftRangePerformance {
                 the inverted Breguet range equation:
                   f = exp( -distance * g * c_T / (V * (L/D)) ).
                 Inputs SI: distance [m], gravity g [m/s^2], thrustSpecificFuelConsumption
-                c_T [kg/(N*s)], airspeed V [m/s], liftToDrag. Returns [dimensionless]. */
+                c_T [kg/(N*s)], airspeed V [m/s], liftToDrag. Returns [dimensionless].
+                Pass the JET max-range L/D (~0.866*(L/D)max), not (L/D)max -- a
+                thrust-producing engine maximizes range at the higher speed where
+                C_L = sqrt(C_D0/3K); see SpeedForMaxRange_Jet. */
         in distance : Real;
         in gravity : Real;
         in thrustSpecificFuelConsumption : Real;
@@ -1684,20 +1687,47 @@ package AircraftRangePerformance {
 
     part DallasToLosAngeles : Mission {
         doc /* Standard flight DFW -> LAX: 1990 km / 1074 nm great circle, FL370 cruise,
-                250 nm reserve. Cruise distance 1620 km (terminals fly ~370 km). */
+                250 nm reserve. All 7 segments populated; the segment groundDistances
+                (climb 220 + cruise 1620 + descent 110 + approachLand 40 = 1990 km) sum
+                to missionRange, and the terminal weightFractions match
+                StandardSegmentFractions -- the same constants the per-aircraft calc
+                usages bind as literals (the cruise fraction is computed per aircraft). */
         attribute redefines missionRange = 1990.0 [km];
         attribute redefines reserveRange = 463.0 [km];
         attribute redefines cruiseDistance = 1620.0 [km];
+        part redefines taxiOut {
+            attribute redefines segmentName = "taxi-out";
+            attribute redefines groundDistance = 0.0 [km];
+            attribute redefines weightFraction = 0.990;
+        }
+        part redefines takeoff {
+            attribute redefines segmentName = "takeoff";
+            attribute redefines groundDistance = 0.0 [km];
+            attribute redefines weightFraction = 0.995;
+        }
         part redefines climb {
+            attribute redefines segmentName = "climb";
             attribute redefines groundDistance = 220.0 [km];
             attribute redefines weightFraction = 0.980;
         }
         part redefines cruise {
+            attribute redefines segmentName = "cruise";
             attribute redefines groundDistance = 1620.0 [km];
         }
         part redefines descent {
+            attribute redefines segmentName = "descent";
             attribute redefines groundDistance = 110.0 [km];
             attribute redefines weightFraction = 0.990;
+        }
+        part redefines approachLand {
+            attribute redefines segmentName = "approach-land";
+            attribute redefines groundDistance = 40.0 [km];
+            attribute redefines weightFraction = 0.992;
+        }
+        part redefines taxiIn {
+            attribute redefines segmentName = "taxi-in";
+            attribute redefines groundDistance = 0.0 [km];
+            attribute redefines weightFraction = 0.997;
         }
     }
 
@@ -1705,23 +1735,27 @@ package AircraftRangePerformance {
        Cabin: 110 pax (11,770 kg) + 5 crew (475 kg) + 2,000 kg nominal cargo. */
 
     package JetLiner110_DFWLAX {
-        doc /* Turbofan on DFW->LAX. FEASIBLE: fuel 6,492 kg << tank 17,300 kg;
-                TOW 56,037 << MTOW 63,100; ZFW 49,545 <= MZFW 50,775. */
+        doc /* Turbofan on DFW->LAX. FEASIBLE: fuel 7,074 kg << tank 17,300 kg;
+                TOW 56,619 << MTOW 63,100; ZFW 49,545 <= MZFW 50,775.
+                Cruise L/D = 16.701 = (sqrt(3)/2)*(L/D)max -- a turbofan's max-range
+                condition is at the HIGHER speed where L/D ~ 0.866*(L/D)max (see
+                SpeedForMaxRange_Jet), NOT at (L/D)max (which the power-producing
+                families use). Using (L/D)max here would understate jet fuel ~9%. */
         private import AircraftRangePerformance::*;
         calc cruiseFraction : CruiseWeightFractionJet {
-            doc /* cruise 1,620 km -> expect 0.94939 */
+            doc /* cruise 1,620 km at jet max-range L/D 16.701 -> expect 0.94179 */
             in distance = 1620000.0;  in gravity = 9.80665;  in thrustSpecificFuelConsumption = 1.45e-5;
-            in airspeed = 230.0;  in liftToDrag = 19.284;
+            in airspeed = 230.0;  in liftToDrag = 16.701;
         }
         calc reserveFraction : CruiseWeightFractionJet {
-            doc /* reserve 463 km -> expect 0.98527 */
+            doc /* reserve 463 km -> expect 0.98301 */
             in distance = 463000.0;  in gravity = 9.80665;  in thrustSpecificFuelConsumption = 1.45e-5;
-            in airspeed = 230.0;  in liftToDrag = 19.284;
+            in airspeed = 230.0;  in liftToDrag = 16.701;
         }
         calc missionFraction : MissionFuelFraction {
-            doc /* expect 0.88415 */
-            in fTaxiOut = 0.990;  in fTakeoff = 0.995;  in fClimb = 0.980;  in fCruise = 0.94939;
-            in fDescent = 0.990;  in fApproach = 0.992;  in fTaxiIn = 0.997;  in fReserve = 0.98527;
+            doc /* expect 0.87506 */
+            in fTaxiOut = 0.990;  in fTakeoff = 0.995;  in fClimb = 0.980;  in fCruise = 0.94179;
+            in fDescent = 0.990;  in fApproach = 0.992;  in fTaxiIn = 0.997;  in fReserve = 0.98301;
         }
         calc zeroFuel : ZeroFuelMass {
             doc /* expect 49,545 kg */
@@ -1729,23 +1763,25 @@ package AircraftRangePerformance {
             in passengerPayload = 11770.0;  in cargoMass = 2000.0;
         }
         calc blockFuel : RequiredBlockFuel {
-            doc /* expect 6,492 kg */
-            in zeroFuelMass = 49545.0;  in missionFuelFraction = 0.88415;
+            doc /* expect 7,074 kg */
+            in zeroFuelMass = 49545.0;  in missionFuelFraction = 0.87506;
         }
         calc takeoffMass : MissionTakeoffMass {
-            doc /* expect 56,037 kg */
-            in zeroFuelMass = 49545.0;  in blockFuel = 6492.0;
+            doc /* expect 56,619 kg */
+            in zeroFuelMass = 49545.0;  in blockFuel = 7074.0;
         }
         assert constraint feasible : MissionFeasibility {
-            in requiredFuel = 6492.0;  in fuelCapacity = 17300.0;
-            in takeoffMass = 56037.0;  in maxTakeoffWeight = 63100.0;
+            in requiredFuel = 7074.0;  in fuelCapacity = 17300.0;
+            in takeoffMass = 56619.0;  in maxTakeoffWeight = 63100.0;
             in zeroFuelMass = 49545.0;  in maxZeroFuelWeight = 50775.0;
         }
     }
 
     package OpenFan110_DFWLAX {
         doc /* Open fan on DFW->LAX. FEASIBLE and most efficient: fuel 5,513 kg
-                (~15% below the turbofan); TOW 55,558 << MTOW 63,100. */
+                (~22% below the turbofan); TOW 55,558 << MTOW 63,100. As a
+                power-producing propulsor it cruises at (L/D)max -- one reason it
+                beats the thrust-producing turbofan, which cruises at ~0.87*(L/D)max. */
         private import AircraftRangePerformance::*;
         calc cruiseFraction : CruiseWeightFractionProp {
             doc /* cruise 1,620 km -> expect 0.96325 */
@@ -1830,17 +1866,19 @@ package AircraftRangePerformance {
     /* ---- mission trade study: which configuration for DFW->LAX, and why ---- */
     package MissionTradeStudy {
         doc /* DFW->LAX (110 pax + 5 crew + 2,000 kg cargo) -- block fuel / feasibility:
-                  JetLiner110     6,492 kg   FEASIBLE (10,808 kg fuel margin)
-                  OpenFan110      5,513 kg   FEASIBLE, lowest burn (-15% vs jet)
+                  JetLiner110     7,074 kg   FEASIBLE (10,226 kg fuel margin)
+                  OpenFan110      5,513 kg   FEASIBLE, lowest burn (-22% vs jet)
                   TurboProp110    7,048 kg   INFEASIBLE (tank 5,000 kg) -> regional only
                   PistonLiner110  8,995 kg   FEASIBLE but tight (260 kg under MTOW), slow
                   HybridElectric  3,045 kg + 14 t battery  FEASIBLE (~45% electric)
+                (Jet cruises at its max-range L/D ~0.87*(L/D)max; the power-producing
+                 families cruise at (L/D)max -- part of why the open fan wins.)
 
                 MAX CARGO that still closes DFW->LAX (full pax): Jet & OpenFan & Hybrid
                 ~3,231 kg (MZFW-limited); Piston ~2,212 kg (MTOW-limited); TurboProp none.
 
                 STUDY (i) payload vs achievable range (full tank): e.g. JetLiner110
-                0 cargo 6,978 km / +max cargo 4,928 km; OpenFan 9,224 / 6,447 km;
+                0 cargo 6,031 km / +max cargo 4,256 km; OpenFan 9,224 / 6,447 km;
                 TurboProp 984 / 388 km (confirms regional); Hybrid 4,151 / 3,930 km.
 
                 STUDY (ii) hybrid battery-mass sweep (DFW->LAX): 8 t batt -> 3,616 kg
@@ -1848,8 +1886,12 @@ package AircraftRangePerformance {
                 DECISION: ~14 t battery is the sweet spot -- larger batteries hit the
                 weight limits before the fuel saving pays off.
 
+                RESERVE: modeled as an equivalent 463 km (250 nm) cruise leg standing in
+                for alternate + 45-min hold; a true hold is flown slower at holding
+                fuel-flow, so this is a conservative sizing reserve (adjust per operator).
+
                 ENGINEERING DECISIONS exposed:
-                  - Open fan vs turbofan: same mission, ~15% less fuel -> fleet fuel cost.
+                  - Open fan vs turbofan: same mission, ~22% less fuel -> fleet fuel cost.
                   - Turboprop: cannot serve DFW->LAX nonstop at full pax -> route network.
                   - Piston: feasible only with no reserve margin -> not certifiable today.
                   - Hybrid: needs the generator (battery-only infeasible); battery sized

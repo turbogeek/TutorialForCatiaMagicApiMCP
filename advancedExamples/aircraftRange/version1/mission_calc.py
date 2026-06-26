@@ -79,11 +79,18 @@ FLEET = {
     V=210.0, LD=18.796, batt=14000.0, battE=3.06e6, eta_drive=0.90, eta_gen=0.40),
 }
 
+def cruise_LD(ac):
+    """Best-range cruise L/D. Power-producing (prop/open-fan/electric) maximize range
+       at (L/D)max. A thrust-producing turbofan maximizes range at the HIGHER speed
+       where L/D = (sqrt(3)/2)*(L/D)max ~ 0.866*(L/D)max (see SpeedForMaxRange_Jet)."""
+    return 0.86603 * ac["LD"] if ac["fam"] == "jet" else ac["LD"]
+
 def cruise_fraction(ac, distance_m):
     """Breguet weight fraction W_end/W_start to fly `distance_m` in cruise."""
+    LD = cruise_LD(ac)
     if ac["fam"] == "jet":
-        return math.exp(-distance_m * G * ac["cT"] / (ac["V"] * ac["LD"]))
-    return math.exp(-distance_m * G * ac["cp"] / (ac["eta_p"] * ac["LD"]))
+        return math.exp(-distance_m * G * ac["cT"] / (ac["V"] * LD))
+    return math.exp(-distance_m * G * ac["cp"] / (ac["eta_p"] * LD))
 
 def zfw(ac, cargo):
     z = ac["OEW"] + CREW_PAYLOAD + PAX_PAYLOAD + cargo
