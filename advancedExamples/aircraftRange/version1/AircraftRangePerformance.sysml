@@ -1955,6 +1955,7 @@ package AircraftRangePerformance {
             expose ThrustProducingAircraft;
             expose ElectricAircraft;
             expose TransportAircraft;
+            filter not KerML::Root::Element::isLibraryElement;
         }
 
         view fleetDefinitionView : DS_Views::SymbolicViews::gv {
@@ -1964,11 +1965,13 @@ package AircraftRangePerformance {
             expose TurboProp110;
             expose PistonLiner110;
             expose HybridElectric110;
+            filter not KerML::Root::Element::isLibraryElement;
         }
 
         view equationsView : DS_Views::SymbolicViews::gv {
             doc /* All governing calc defs (aero core, speeds, range/endurance, mission). */
             expose AircraftRangePerformance::*;
+            filter not KerML::Root::Element::isLibraryElement;
         }
 
         view systemDecompositionView : DS_Views::SymbolicViews::gv {
@@ -1981,35 +1984,41 @@ package AircraftRangePerformance {
             expose FlightControlSystem;
             expose ElectricalSystem;
             expose CabinPayloadSystem;
+            filter not KerML::Root::Element::isLibraryElement;
         }
 
         view systemInternalView : DS_Views::SymbolicViews::iv {
             doc /* Airplane system internal structure: subsystems wired by ports and
                     connections (IBD-style). */
             expose AirplaneSystem;
+            filter not KerML::Root::Element::isLibraryElement;
         }
 
         view hybridInternalView : DS_Views::SymbolicViews::iv {
             doc /* Hybrid system internals, including the turbogenerator -> electrical
                     bus connection. */
             expose HybridSystem;
+            filter not KerML::Root::Element::isLibraryElement;
         }
 
         view flightPhasesStateView : DS_Views::SymbolicViews::stv {
             doc /* Flight-phase state machine: parked -> taxi -> takeoff -> climb ->
                     cruise -> descent -> approach -> landing. */
             expose AirplaneSystem;
+            filter not KerML::Root::Element::isLibraryElement;
         }
 
         view missionActionView : DS_Views::SymbolicViews::afv {
             doc /* Mission action sequence: startUp -> taxiOut -> ... -> shutDown. */
             expose AirplaneSystem;
+            filter not KerML::Root::Element::isLibraryElement;
         }
 
         view requirementsTableView : DS_Views::TabularViews::rt {
             doc /* Requirement table: design targets + system capability requirements. */
             expose Requirements;
             expose SystemRequirements;
+            filter not KerML::Root::Element::isLibraryElement;
         }
 
         view tradeStudyTableView : DS_Views::TabularViews::gt {
@@ -2020,6 +2029,7 @@ package AircraftRangePerformance {
             expose PistonLiner110_TradeStudy;
             expose HybridElectric110_TradeStudy;
             expose MissionTradeStudy;
+            filter not KerML::Root::Element::isLibraryElement;
         }
     }
 }

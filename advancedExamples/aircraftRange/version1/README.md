@@ -330,6 +330,11 @@ as actual diagrams in Cameo (a bare textual `view` is not a diagram):
 | `requirementsTableView` | `TabularViews::rt` | requirement table |
 | `tradeStudyTableView` | `TabularViews::gt` | generic table |
 
+Every view also carries `filter not KerML::Root::Element::isLibraryElement;` so the
+imported standard-library / scope elements pulled in by `expose` are **hidden** from the
+rendered diagram — without it a diagram is cluttered with library elements that are
+worthless to the reader.
+
 > When iterating against a live Cameo session, each `/load-sysml` commits into the open
 > project; **undo the prior load (Cameo has full undo) or use a fresh project** before
 > re-loading, rather than letting duplicate root packages accumulate.
