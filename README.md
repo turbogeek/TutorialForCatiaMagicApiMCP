@@ -1,6 +1,10 @@
 # TutorialForCatiaMagicApiMCP
 
-A tutorial project that builds — and then uses — an **MCP (Model Context Protocol) server** purpose-built for authoring scripts against the **Cameo / MagicDraw / CATIA Magic Open API** (version 26xR1). The paired Claude Code subagent, `cameo-api-scripter`, knows the conventions (sessions, error channels, GString pitfalls, etc.) that the raw docs don't spell out in one place.
+A tutorial project that builds — and then uses — an **MCP (Model Context Protocol) server** purpose-built for authoring scripts against the **Cameo / MagicDraw / CATIA Magic Open API** (version 26xR1). The paired AI subagent, `cameo-api-scripter`, knows the conventions (sessions, error channels, GString pitfalls, etc.) that the raw docs don't spell out in one place.
+
+##
+
+This file project is a work in progress and run in a windows environment. The OpenApi is version 26xR1, but it can use any version of the tool. The skills were originally built for Claude, but have been genericized to work seamlessly with Gemini, ChatGPT, and Antigravity.
 
 > [!WARNING]
 > This is based on instructions as of 2026-04-22 and subject to change.
@@ -12,7 +16,7 @@ A tutorial project that builds — and then uses — an **MCP (Model Context Pro
 
 ## Now things get a little squirrely
 
-Here is the prompt I gave Claude Code:
+Here is the prompt I gave the AI assistant:
 
 > [!WARNING]
 > Make sure you are in a good high-power version and you have **Plan Mode** turned on (**Opus 4.7 Extra High** was used for this step, so TL;DR YMMV). Note that you need to uncompress the Open API data in your installation and remove the zip files.
@@ -21,7 +25,7 @@ Here is the prompt I gave Claude Code:
 I have begun the setup for an MCP server that is hosted on Windows. This MCP server is to support the writing of Java or supported scripts like Groovy and JavaScript scripts for the Open API of MagicDraw/Cameo/Catia-Magic's Open API (hereafter called simply Cameo API) which is a Java-based API. I have given you a reference to the JavaDoc, Developer Guide, and Samples folders for version 26xR1 of the API: "E:\Magic SW\MCSE26xR1_4_2\openapi" The working directory of the github project is here "E:\_Documents\git\TutorialForCatiaMagicApiMCP" and the directory for the specific config and code of the MCP is here "E:\_Documents\git\TutorialForCatiaMagicApiMCP\MCP4MagicAPI". Please create the MCP and an agent to use it. In the agent, be sure to include best practices for scripting in the MagicDraw environment, and best practices for using sessions when using API to modify the model and for reporting errors to the MagicDraw console. Create a plan.md and after I review it, we will begin coding. Remember to be accurate, create and use test-first Iterative Testing (TDD Flow) methodology that always runs unit and integration tests on the server after each change, use good documentation, and update the README with tutorials and features along the way.
 ```
 
-At this stage you probably get a prompt that Claude has completed its research and is ready to create the plan. If so, tell it to proceed. If it creates the plan, review it and make any changes.
+At this stage you probably get a prompt that the AI has completed its research and is ready to create the plan. If so, tell it to proceed. If it creates the plan, review it and make any changes.
 
 > [!NOTE]
 > The AI may ask you questions like where to put the agent files (I chose this project), adding Groovy/Java validation (I chose both), what versions to use (I took the recommended), etc. I usually select the default or widest scope.
@@ -44,12 +48,15 @@ I have created a scripts directory with a logger tool, "E:\_Documents\git\Tutori
 We have provided automated installation scripts to streamline the setup process for the MCP server and test harness. You can run `install.bat` (Windows) or `./install.sh` (macOS/Linux) from the root of the repository.
 
 These scripts will:
+
 1. Verify Node.js is installed.
 2. Prompt you for your CATIA Magic / Cameo installation directory to optionally configure `JAVA_HOME`.
 3. Install dependencies (`npm install`) and build the MCP server (`npm run build`).
-4. Provide the exact command to integrate the server with Claude Code.
+4. Provide the exact command to integrate the server with your AI agent.
 
-Alternatively, you can set it up manually. Here are the instructions that the AI gave for starting the server:
+Alternatively, you can set it up manually. For full installation instructions, including test harness setup and repository links, refer to [installInstructions.md](installInstructions.md).
+
+If you are setting it up manually, here are the instructions for starting the server (example for Claude):
 
 ```powershell
 cd MCP4MagicAPI
@@ -60,11 +67,12 @@ claude mcp add MCP4MagicAPI node E:\_Documents\git\TutorialForCatiaMagicApiMCP\M
 
 ## The Cameo Test Harness
 
-While the MCP server runs outside of Cameo and provides context and tools to the LLM, the **Cameo Test Harness** is a companion component that runs *inside* the live Cameo/MagicDraw session. 
+While the MCP server runs outside of Cameo and provides context and tools to the LLM, the **Cameo Test Harness** is a companion component that runs *inside* the live Cameo/MagicDraw session.
 
 Because the Cameo Open API requires access to the running application state (the project, the active diagrams, the session manager), scripts generated by the AI must be executed inside Cameo's JVM. The Test Harness acts as a bridge, exposing a local REST API (on port `8765` by default) that allows the LLM (or you, via curl/scripts) to deploy and run Groovy scripts directly inside Cameo without manual copy-pasting.
 
-### Key Features of the Test Harness:
+### Key Features of the Test Harness
+
 - **Clean Execution Context:** Every `/run` request loads the script in a *fresh* `GroovyClassLoader`, eliminating stale bytecode caches between runs.
 - **Resource Cleanup:** It automatically cancels dangling `SessionManager` transactions and closes any `java.awt.Window` dialogs that a failed script might have left open, ensuring the next run starts clean.
 - **Configuration UI:** When started, a modeless dialog lets you configure paths (Harness Path, Project Path, Log Path) and toggle the GUI Log Level to prevent MagicDraw from stealing focus during heavy logging.
@@ -106,7 +114,7 @@ Hooray — more credits saved. Time to update the agent to ensure this does not 
 
 ## User Smoke Testing
 
-The first run of the generated script *worked* — but it was still wrong in a sneaky way. I fed Claude the following prompt to tighten the MCP. There's more fine-tuning going on than I'm documenting here (I hope to capture the conversation for posterity), but this gives the reader what's necessary to home in on the correct result.
+The first run of the generated script *worked* — but it was still wrong in a sneaky way. I fed the AI the following prompt to tighten the MCP. There's more fine-tuning going on than I'm documenting here (I hope to capture the conversation for posterity), but this gives the reader what's necessary to home in on the correct result.
 
 ```
 Got this error, which means that you need to better ensure you need improvements to your MCP as "com.nomagic.uml2.ext.magicdraw.classes.mdprofiles.Stereotype" does not exist. The real item is "com.nomagic.uml2.ext.magicdraw.mdprofiles.Stereotype," so there is an insert of a very bad bit of a package path. This also means there is a fatal flaw in the MCP: it does not ensure a hallucination, and your decisions are predictable based on the MCP's data lookup. That is not the only error, as I see 6 packages that do not exist. I suspect there are other issues. Also, you need to prioritize factories and helper classes, and lower the priority of ecore over other packages, as ecore is plumbing rather than core, as you can see in the examples.
@@ -125,11 +133,13 @@ Add that automatic cross-check. Also, the MCP should return a proper error if th
 We have successfully completed the first automation tutorial: **The Swimming Robot**. This exercise validated the end-to-end pipeline from requirement definition to automated model generation and harness-based validation.
 
 ### Key Milestones
+
 - **Script Generation**: An AI agent successfully authored a SysMLv2 Groovy script for REQ-1 and its satisfying architecture.
 - **Harness Execution**: The script was deployed and run via the `SysMLv2TestHarness` on port **8765**.
 - **Automated Validation**: The script's dedicated log verified the creation of 5+ elements with 100% accuracy.
 
 ### Lessons Learned (Hard-won)
+
 - **SysMLv2 Literals**: Avoid `LiteralReal` (hallucination risk); use `LiteralRational` from the `kerml` package for real-number attributes.
 - **SysMLv2 Terminology**: Use terminology matching the metamodel (e.g. `SatisfyRequirementUsage`, `PartUsage`, `PartDefinition`). Link satisfaction via a `ReferenceSubsetting` owned by the `SatisfyRequirementUsage` rather than generic end chains.
 - **Package Ownership**: Put all elements into a dedicated `Package` using `Elements.setOwningMembership` rather than placing them in the root namespace.
@@ -154,7 +164,7 @@ Check the [TutorialOne folder](file:///e:/_Documents/git/TutorialForCatiaMagicAp
   - Profiles (multi-version / multi-modeling-type): `cameo_profile_list`, `cameo_profile_active`, `cameo_profile_switch`, `cameo_profile_add`, `cameo_profile_remove`, `cameo_profile_status`
 - A curated **snippet library** covering sessions, logging, script loading, Finder idioms, association ends, the dedicated-log-file pattern, the batch-runner skeleton, and more — all Groovy unless noted, all vetted for Cameo API compatibility.
 - A **best-practices catalog** (14 topics) capturing what to do *and* what to avoid: the `ask-first` rule, session discipline, three-channel error reporting, the **no-GString-at-API-boundary** rule, no `System.exit`, headless detection, `Finder` over owner-walks, collections-are-live, association ends, REST harness hygiene, dedicated-log-file, batch-runner, and **verify-fqn** (mandatory FQN check before emitting any `com.nomagic.*` import).
-- A **subagent** ([.claude/agents/cameo-api-scripter.md](.claude/agents/cameo-api-scripter.md)) that wires these tools into a scripting protocol: asks up front about API version and modeling types, requires FQN verification before every import, requires `validate_script_syntax` before returning code.
+- A **subagent** ([agents/cameo-api-scripter.md](agents/cameo-api-scripter.md)) that wires these tools into a scripting protocol: asks up front about API version and modeling types, requires FQN verification before every import, requires `validate_script_syntax` before returning code.
 
 ## Repository layout
 
@@ -162,9 +172,8 @@ Check the [TutorialOne folder](file:///e:/_Documents/git/TutorialForCatiaMagicAp
 TutorialForCatiaMagicApiMCP/
 ├── README.md                              ← this file
 ├── plan.md                                ← original build plan
-├── .claude/
-│   └── agents/
-│       └── cameo-api-scripter.md          ← the subagent
+├── agents/
+│   └── cameo-api-scripter.md              ← the subagent
 ├── scripts/
 │   ├── SysMLv2Logger.groovy               ← reference logger class
 │   ├── RequirementSatisfyMatrixGraphics.groovy
@@ -216,7 +225,7 @@ Expect **125+ tests green** across 14 files (unit + integration). Tests use smal
 
 ## Use the agent
 
-In any Claude Code session inside this repo, invoke the subagent:
+In any AI agent session inside this repo, invoke the subagent:
 
 > *Agent, use **cameo-api-scripter**: write a Groovy script that adds a Class named 'Foo' under the model root in the current project, wrapped in a session.*
 
@@ -230,7 +239,7 @@ Expected behavior:
 
 ## The 11 rules baked into the agent
 
-Pulled from [.claude/agents/cameo-api-scripter.md](.claude/agents/cameo-api-scripter.md):
+Pulled from [agents/cameo-api-scripter.md](agents/cameo-api-scripter.md):
 
 0. **Ask up front** — confirm API version and modeling types via `cameo_profile_status` before writing anything. SysMLv1 and SysMLv2 use different packages.
 1. **Verify every FQN** before emitting an import via `javadoc_verify_fqn`. Hallucinations are the #1 failure mode.

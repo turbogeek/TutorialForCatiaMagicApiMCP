@@ -1,0 +1,1 @@
+{"nodes": [], "edges": [], "hyperedges": [{"id": "mcp_tooling_suite", "label": "MCP Tooling Suite", "nodes": ["mcp_javadoc_adapter", "mcp_guide_adapter", "mcp_example_adapter", "mcp_validator", "mcp_profile_system"], "relation": "participate_in", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "plan.md"}]}

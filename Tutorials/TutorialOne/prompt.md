@@ -14,6 +14,7 @@ Act as a SysMLv2 modeling expert for the CATIA Magic Open API. Your task is to d
 4. Create a Part Usage "robot1" typed by the "Swimming Robot" definition (owned by the new package).
 5. Create an Attribute Usage "cost" under "robot1" with type ScalarValue::Real and a default value of 500.0 (use LiteralRational).
 6. Create a `SatisfyRequirementUsage` as a feature of the "robot1" usage. This satisfy usage MUST reference "REQ-1" as its satisfied requirement by creating a `ReferenceSubsetting` where the subsetted feature is the requirement, and subsetting feature is the satisfy usage, with the owner of the subsetting being the satisfy usage.
+7. Create a Port "swimPort" for the Swimming Robot definition with direction IN_OUT and multiplicity `0..*`.
 
 ## Execution Requirements
 

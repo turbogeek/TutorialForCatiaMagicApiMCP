@@ -1,0 +1,567 @@
+{
+  "DroneModelCreation/create-drone-model.groovy": {
+    "mtime": 1776964834.605728,
+    "ast_hash": "20b82edcbb2f97bb433dcbfc493d22c5",
+    "semantic_hash": "20b82edcbb2f97bb433dcbfc493d22c5"
+  },
+  "MCP4MagicAPI/package.json": {
+    "mtime": 1776802529.6007981,
+    "ast_hash": "71954e187cf56f93e57efd2791a58c4a",
+    "semantic_hash": "71954e187cf56f93e57efd2791a58c4a"
+  },
+  "MCP4MagicAPI/src/adapters/examples.ts": {
+    "mtime": 1776876824.4419816,
+    "ast_hash": "e5a8ed4fa43fed2dfe9e0ae36c5f5724",
+    "semantic_hash": "e5a8ed4fa43fed2dfe9e0ae36c5f5724"
+  },
+  "MCP4MagicAPI/src/adapters/guide.ts": {
+    "mtime": 1776876828.6943278,
+    "ast_hash": "e72ad027ada97cbe62cc9f131ab159e1",
+    "semantic_hash": "e72ad027ada97cbe62cc9f131ab159e1"
+  },
+  "MCP4MagicAPI/src/adapters/guideSearch.ts": {
+    "mtime": 1776876834.0792994,
+    "ast_hash": "c63f171271874b547618e039d62bfff7",
+    "semantic_hash": "c63f171271874b547618e039d62bfff7"
+  },
+  "MCP4MagicAPI/src/adapters/javadoc.ts": {
+    "mtime": 1776876838.6458602,
+    "ast_hash": "199152ab94fec6f291462971c827986b",
+    "semantic_hash": "199152ab94fec6f291462971c827986b"
+  },
+  "MCP4MagicAPI/src/adapters/javadocSearch.ts": {
+    "mtime": 1776876847.8408365,
+    "ast_hash": "58b40aec93b678d4d26a86b3decca343",
+    "semantic_hash": "58b40aec93b678d4d26a86b3decca343"
+  },
+  "MCP4MagicAPI/src/adapters/profile.ts": {
+    "mtime": 1776876854.0820928,
+    "ast_hash": "ded8700d7273d73028e2e6644c0ef888",
+    "semantic_hash": "ded8700d7273d73028e2e6644c0ef888"
+  },
+  "MCP4MagicAPI/src/adapters/validate.ts": {
+    "mtime": 1776876862.8196058,
+    "ast_hash": "fdca647086edf6077ac7f11edd960a14",
+    "semantic_hash": "fdca647086edf6077ac7f11edd960a14"
+  },
+  "MCP4MagicAPI/src/config.ts": {
+    "mtime": 1777672369.5441136,
+    "ast_hash": "938e112dba5f36689c3a1ca5209920fb",
+    "semantic_hash": "938e112dba5f36689c3a1ca5209920fb"
+  },
+  "MCP4MagicAPI/src/data/best-practices.json": {
+    "mtime": 1776875524.7256203,
+    "ast_hash": "ca3ce8fe0828ae4b1c19245fcbb41869",
+    "semantic_hash": "ca3ce8fe0828ae4b1c19245fcbb41869"
+  },
+  "MCP4MagicAPI/src/data/snippets.json": {
+    "mtime": 1776812228.5319777,
+    "ast_hash": "392f3f611b563ff954f586d307460c06",
+    "semantic_hash": "392f3f611b563ff954f586d307460c06"
+  },
+  "MCP4MagicAPI/src/index.ts": {
+    "mtime": 1776876907.770126,
+    "ast_hash": "b85d774cfd6e46011b0a140dc2a6ebe1",
+    "semantic_hash": "b85d774cfd6e46011b0a140dc2a6ebe1"
+  },
+  "MCP4MagicAPI/src/tools/bestPractices.ts": {
+    "mtime": 1776876869.3396113,
+    "ast_hash": "98c564c6dff1e7947fe205a9e8dd6174",
+    "semantic_hash": "98c564c6dff1e7947fe205a9e8dd6174"
+  },
+  "MCP4MagicAPI/src/tools/exampleSearch.ts": {
+    "mtime": 1776876879.4711375,
+    "ast_hash": "75c64ca7a1155486d3161bd2149eba9b",
+    "semantic_hash": "75c64ca7a1155486d3161bd2149eba9b"
+  },
+  "MCP4MagicAPI/src/tools/examples.ts": {
+    "mtime": 1776876878.7676997,
+    "ast_hash": "1593d5923a75bdb64e0b2e60b38f6685",
+    "semantic_hash": "1593d5923a75bdb64e0b2e60b38f6685"
+  },
+  "MCP4MagicAPI/src/tools/guide.ts": {
+    "mtime": 1776876882.0391726,
+    "ast_hash": "0ed5f0f0a4d36f6fc6df9ad3d0c1dc75",
+    "semantic_hash": "0ed5f0f0a4d36f6fc6df9ad3d0c1dc75"
+  },
+  "MCP4MagicAPI/src/tools/guideSearch.ts": {
+    "mtime": 1776876884.3578465,
+    "ast_hash": "0328ef8efeee24428fc2682cbd4154ee",
+    "semantic_hash": "0328ef8efeee24428fc2682cbd4154ee"
+  },
+  "MCP4MagicAPI/src/tools/javadoc.ts": {
+    "mtime": 1776876887.8134046,
+    "ast_hash": "93fb491f67f6eb49c8213c408059f857",
+    "semantic_hash": "93fb491f67f6eb49c8213c408059f857"
+  },
+  "MCP4MagicAPI/src/tools/javadocSearch.ts": {
+    "mtime": 1776876891.2539847,
+    "ast_hash": "887ac65387362312c0bb0c87ead81fe7",
+    "semantic_hash": "887ac65387362312c0bb0c87ead81fe7"
+  },
+  "MCP4MagicAPI/src/tools/profile.ts": {
+    "mtime": 1776876895.6052928,
+    "ast_hash": "bc60002bc6af108e70a63ca94ded2226",
+    "semantic_hash": "bc60002bc6af108e70a63ca94ded2226"
+  },
+  "MCP4MagicAPI/src/tools/snippets.ts": {
+    "mtime": 1776876872.967191,
+    "ast_hash": "3210705aefeba60131f41c6e12342d3f",
+    "semantic_hash": "3210705aefeba60131f41c6e12342d3f"
+  },
+  "MCP4MagicAPI/src/tools/validate.ts": {
+    "mtime": 1776876897.7809856,
+    "ast_hash": "93d0cebc12c2b5a5f08f51219bef8d0d",
+    "semantic_hash": "93d0cebc12c2b5a5f08f51219bef8d0d"
+  },
+  "MCP4MagicAPI/tests/fixtures/examples-mock/plain/src/com/fake/Plain.java": {
+    "mtime": 1776809112.0928137,
+    "ast_hash": "d19bf971fb0f08b87d48a1acec1b0c50",
+    "semantic_hash": "d19bf971fb0f08b87d48a1acec1b0c50"
+  },
+  "MCP4MagicAPI/tests/fixtures/examples-mock/sampleaction/src/com/fake/SampleActionPlugin.java": {
+    "mtime": 1776809108.412445,
+    "ast_hash": "41ba98e253e91b199d31a9eaab9d1654",
+    "semantic_hash": "41ba98e253e91b199d31a9eaab9d1654"
+  },
+  "MCP4MagicAPI/tests/fixtures/examples-mock/validationrule/src/com/fake/ValidationRulePlugin.java": {
+    "mtime": 1776809111.2154577,
+    "ast_hash": "99597d500bd1fc7e6852e79023e5a3fe",
+    "semantic_hash": "99597d500bd1fc7e6852e79023e5a3fe"
+  },
+  "MCP4MagicAPI/tests/fixtures/javadoc-mock/member-search-index.js": {
+    "mtime": 1776810393.0699894,
+    "ast_hash": "fe934f26a6d745a6b71ab876da9be161",
+    "semantic_hash": "fe934f26a6d745a6b71ab876da9be161"
+  },
+  "MCP4MagicAPI/tests/fixtures/javadoc-mock/package-search-index.js": {
+    "mtime": 1776810394.0326984,
+    "ast_hash": "ea68306b6425d338b92a229876079f71",
+    "semantic_hash": "ea68306b6425d338b92a229876079f71"
+  },
+  "MCP4MagicAPI/tests/fixtures/javadoc-mock/type-search-index.js": {
+    "mtime": 1776869371.6134548,
+    "ast_hash": "11af50d2237f50f0e68a37ba23dc6795",
+    "semantic_hash": "11af50d2237f50f0e68a37ba23dc6795"
+  },
+  "MCP4MagicAPI/tests/integration/server.test.ts": {
+    "mtime": 1776875621.171072,
+    "ast_hash": "c1ab3e58463399a2740caaf96773ff3f",
+    "semantic_hash": "c1ab3e58463399a2740caaf96773ff3f"
+  },
+  "MCP4MagicAPI/tests/unit/bestPractices.test.ts": {
+    "mtime": 1776875600.5431216,
+    "ast_hash": "9dbbd14b113ee81c4346f8fce7d3a3e6",
+    "semantic_hash": "9dbbd14b113ee81c4346f8fce7d3a3e6"
+  },
+  "MCP4MagicAPI/tests/unit/bestPracticesFilter.test.ts": {
+    "mtime": 1776875587.3612337,
+    "ast_hash": "5d40baaa178178d779a9dd09179780ba",
+    "semantic_hash": "5d40baaa178178d779a9dd09179780ba"
+  },
+  "MCP4MagicAPI/tests/unit/exampleAdapter.test.ts": {
+    "mtime": 1776809137.8542883,
+    "ast_hash": "ee5529c43d6eaf440823cd501bec72ef",
+    "semantic_hash": "ee5529c43d6eaf440823cd501bec72ef"
+  },
+  "MCP4MagicAPI/tests/unit/exampleSearch.test.ts": {
+    "mtime": 1776809423.7804186,
+    "ast_hash": "14637b3df7c10e9773ba3acab56f3a33",
+    "semantic_hash": "14637b3df7c10e9773ba3acab56f3a33"
+  },
+  "MCP4MagicAPI/tests/unit/guideAdapter.test.ts": {
+    "mtime": 1776809570.1065183,
+    "ast_hash": "0847052bea1b11b67004f4fc89c7a3eb",
+    "semantic_hash": "0847052bea1b11b67004f4fc89c7a3eb"
+  },
+  "MCP4MagicAPI/tests/unit/guideSearch.test.ts": {
+    "mtime": 1776809714.7879317,
+    "ast_hash": "a68246b962659bf0fdd7bcb75d15f0fb",
+    "semantic_hash": "a68246b962659bf0fdd7bcb75d15f0fb"
+  },
+  "MCP4MagicAPI/tests/unit/javadocAdapter.test.ts": {
+    "mtime": 1776810111.7652721,
+    "ast_hash": "7eb607cd05cc7ddd24bc28700186348c",
+    "semantic_hash": "7eb607cd05cc7ddd24bc28700186348c"
+  },
+  "MCP4MagicAPI/tests/unit/javadocSearch.test.ts": {
+    "mtime": 1776810419.3427632,
+    "ast_hash": "43b67e3f0ff229077e7ced223056dbd8",
+    "semantic_hash": "43b67e3f0ff229077e7ced223056dbd8"
+  },
+  "MCP4MagicAPI/tests/unit/javadocVerify.test.ts": {
+    "mtime": 1776869394.7484727,
+    "ast_hash": "d5d0b3ef2b248c37dbe189ebc3098de2",
+    "semantic_hash": "d5d0b3ef2b248c37dbe189ebc3098de2"
+  },
+  "MCP4MagicAPI/tests/unit/profile.test.ts": {
+    "mtime": 1776875559.311119,
+    "ast_hash": "6179c51cce8d6480eae505213d66be2c",
+    "semantic_hash": "6179c51cce8d6480eae505213d66be2c"
+  },
+  "MCP4MagicAPI/tests/unit/snippetStore.test.ts": {
+    "mtime": 1776875603.5517144,
+    "ast_hash": "ebc5d19347d8c9d6fe00349cf0a4ee07",
+    "semantic_hash": "ebc5d19347d8c9d6fe00349cf0a4ee07"
+  },
+  "MCP4MagicAPI/tests/unit/validate.test.ts": {
+    "mtime": 1776810545.3677182,
+    "ast_hash": "e572d142f047d3083afff27ba4ec3bd1",
+    "semantic_hash": "e572d142f047d3083afff27ba4ec3bd1"
+  },
+  "MCP4MagicAPI/tests/unit/validateImports.test.ts": {
+    "mtime": 1776875577.6985667,
+    "ast_hash": "f851abf8f7d9c9eee674355e7307a286",
+    "semantic_hash": "f851abf8f7d9c9eee674355e7307a286"
+  },
+  "MCP4MagicAPI/tsconfig.json": {
+    "mtime": 1776802533.9884467,
+    "ast_hash": "9206d6e891b81ffc5f08d3ddd7d45a5a",
+    "semantic_hash": "9206d6e891b81ffc5f08d3ddd7d45a5a"
+  },
+  "MCP4MagicAPI/vitest.config.ts": {
+    "mtime": 1776802532.2724736,
+    "ast_hash": "a413a7bb45b2b7abef7cd5f873492d46",
+    "semantic_hash": "a413a7bb45b2b7abef7cd5f873492d46"
+  },
+  "Tutorials/Lab3 -Create a SysMLv1 Data Entry Tool for Use Cases/scripts/version1/UseCaseTool.groovy": {
+    "mtime": 1778718522.2183943,
+    "ast_hash": "5e9c6e002476101b80abf55e7349a0c0",
+    "semantic_hash": "5e9c6e002476101b80abf55e7349a0c0"
+  },
+  "Tutorials/Lab3 -Create a SysMLv1 Data Entry Tool for Use Cases/scripts/version2/UseCaseTool.groovy": {
+    "mtime": 1778770315.0588076,
+    "ast_hash": "8eb0038dee2e9430b7434e5eec5d5633",
+    "semantic_hash": "8eb0038dee2e9430b7434e5eec5d5633"
+  },
+  "Tutorials/Lab3 -Create a SysMLv1 Data Entry Tool for Use Cases/scripts/version3/UseCaseTool.groovy": {
+    "mtime": 1778774855.9036543,
+    "ast_hash": "a130e544d959a8b8f0335a995f8fd83f",
+    "semantic_hash": "a130e544d959a8b8f0335a995f8fd83f"
+  },
+  "Tutorials/Lab3 -Create a SysMLv1 Data Entry Tool for Use Cases/scripts/version4/UseCaseTool.groovy": {
+    "mtime": 1778775201.69055,
+    "ast_hash": "d3a10debc6a2d8c371d002344340004a",
+    "semantic_hash": "d3a10debc6a2d8c371d002344340004a"
+  },
+  "Tutorials/Lab3 -Create a SysMLv1 Data Entry Tool for Use Cases/scripts/version5/UseCaseTool.groovy": {
+    "mtime": 1778778736.2603774,
+    "ast_hash": "e218b40f692690e1dc890b91e5e0ddf5",
+    "semantic_hash": "e218b40f692690e1dc890b91e5e0ddf5"
+  },
+  "Tutorials/Lab3 -Create a SysMLv1 Data Entry Tool for Use Cases/scripts/version6/UseCaseTool.groovy": {
+    "mtime": 1778780503.7401211,
+    "ast_hash": "2036b662bc72479bed83b92a28065c45",
+    "semantic_hash": "2036b662bc72479bed83b92a28065c45"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/CheckConnector.groovy": {
+    "mtime": 1778987641.8722503,
+    "ast_hash": "097d3d04b4d26ba050cbd2f355443a34",
+    "semantic_hash": "097d3d04b4d26ba050cbd2f355443a34"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/CheckConnectorEndMethods.groovy": {
+    "mtime": 1778987892.571221,
+    "ast_hash": "60bb908b1fde78d85f71bb6dd781f37d",
+    "semantic_hash": "60bb908b1fde78d85f71bb6dd781f37d"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/CheckConnectorMethods.groovy": {
+    "mtime": 1778987699.9291196,
+    "ast_hash": "a8d7d9dcb5cbecbcc0d342c33e1a6780",
+    "semantic_hash": "a8d7d9dcb5cbecbcc0d342c33e1a6780"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/CheckDiagramTypes.groovy": {
+    "mtime": 1778988431.134879,
+    "ast_hash": "a9218e2a31285ce4aefea35d184d2228",
+    "semantic_hash": "a9218e2a31285ce4aefea35d184d2228"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/CheckGTM.groovy": {
+    "mtime": 1778988409.6717262,
+    "ast_hash": "9457ebe916e675ff0ecaadf2b8407740",
+    "semantic_hash": "9457ebe916e675ff0ecaadf2b8407740"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/CheckLayout.groovy": {
+    "mtime": 1778988277.5089664,
+    "ast_hash": "99a3e8694e3caf4ccb3fb44253d7a4ef",
+    "semantic_hash": "99a3e8694e3caf4ccb3fb44253d7a4ef"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/CheckLayouting.groovy": {
+    "mtime": 1778988308.0506291,
+    "ast_hash": "a9f0853d28db43e10144526d603126a4",
+    "semantic_hash": "a9f0853d28db43e10144526d603126a4"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/CheckPEM.groovy": {
+    "mtime": 1778988253.2448232,
+    "ast_hash": "41203cc07b374911f0e793a8b468dbdb",
+    "semantic_hash": "41203cc07b374911f0e793a8b468dbdb"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/CheckSatisfy.groovy": {
+    "mtime": 1778987689.1077929,
+    "ast_hash": "66e7500250fc2a4f680f23697d8b348f",
+    "semantic_hash": "66e7500250fc2a4f680f23697d8b348f"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/CheckTable.groovy": {
+    "mtime": 1778988332.0162232,
+    "ast_hash": "71bdac25399a343544156e144c6ef1e8",
+    "semantic_hash": "71bdac25399a343544156e144c6ef1e8"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/CheckValueProperty.groovy": {
+    "mtime": 1778987662.429191,
+    "ast_hash": "b23c1715345e5abf5c133a601dc2a3a3",
+    "semantic_hash": "b23c1715345e5abf5c133a601dc2a3a3"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/CreateSysMLv1Model.groovy": {
+    "mtime": 1778988619.9942374,
+    "ast_hash": "64ad4ee60505d5988bf13a67f93df5b4",
+    "semantic_hash": "64ad4ee60505d5988bf13a67f93df5b4"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version1/DumpMethods.groovy": {
+    "mtime": 1778983479.2501264,
+    "ast_hash": "4e129bbc77c7f815bc370c5f6fc58b26",
+    "semantic_hash": "4e129bbc77c7f815bc370c5f6fc58b26"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version2/CreateSysMLv2Model.groovy": {
+    "mtime": 1778983072.1206765,
+    "ast_hash": "1b6440f6f2ae3e5360729e7a92a15492",
+    "semantic_hash": "1b6440f6f2ae3e5360729e7a92a15492"
+  },
+  "Tutorials/Lab4 - Create New Models/scripts/version2/InspectSysMLv2Project.groovy": {
+    "mtime": 1778983279.381367,
+    "ast_hash": "54e5a1df6fa2ff86b7bd947bcba05c67",
+    "semantic_hash": "54e5a1df6fa2ff86b7bd947bcba05c67"
+  },
+  "Tutorials/TutorialOne/payload.json": {
+    "mtime": 1777859434.789595,
+    "ast_hash": "b36accd0f82f063434157f6076eb1786",
+    "semantic_hash": "b36accd0f82f063434157f6076eb1786"
+  },
+  "Tutorials/TutorialOne/payload_constructors.json": {
+    "mtime": 1777924425.6069753,
+    "ast_hash": "41efba22a0209a952cf6ab942c68e255",
+    "semantic_hash": "41efba22a0209a952cf6ab942c68e255"
+  },
+  "Tutorials/TutorialOne/scripts/version1/CheckConstructors.groovy": {
+    "mtime": 1777924418.127363,
+    "ast_hash": "2cf7fa731740fb965aa661198b34cd6a",
+    "semantic_hash": "2cf7fa731740fb965aa661198b34cd6a"
+  },
+  "Tutorials/TutorialOne/scripts/version1/SwimmingRobot.groovy": {
+    "mtime": 1777859425.930667,
+    "ast_hash": "993221eed9a2701d2a922a47a474d341",
+    "semantic_hash": "993221eed9a2701d2a922a47a474d341"
+  },
+  "Tutorials/TutorialOne/scripts/version2/SwimmingRobot.groovy": {
+    "mtime": 1778685855.3982363,
+    "ast_hash": "ec6f178eb0940c52d1bf2fda5ef54abe",
+    "semantic_hash": "ec6f178eb0940c52d1bf2fda5ef54abe"
+  },
+  "Tutorials/TutorialOne/scripts/version3/SwimmingRobot.groovy": {
+    "mtime": 1779140384.559043,
+    "ast_hash": "14c5fec0b3cf43ebfeb0987962da3406",
+    "semantic_hash": "14c5fec0b3cf43ebfeb0987962da3406"
+  },
+  "Tutorials/TutorialTwo/Examples of scripts/v2Matrix/fixtures/build-fixture.groovy": {
+    "mtime": 1777562089.5370984,
+    "ast_hash": "1d4c940a62607f422d5b50f5e532b196",
+    "semantic_hash": "1d4c940a62607f422d5b50f5e532b196"
+  },
+  "Tutorials/TutorialTwo/Examples of scripts/v2Matrix/fixtures/fixture-manifest.json": {
+    "mtime": 1777562089.5384734,
+    "ast_hash": "f8977415ea278886cf8533dcc0aa9396",
+    "semantic_hash": "f8977415ea278886cf8533dcc0aa9396"
+  },
+  "Tutorials/TutorialTwo/Other Version and Tutorial slides/payload.json": {
+    "mtime": 1777845470.228691,
+    "ast_hash": "8bc66f019441a1fd564c9ef9e82e2b75",
+    "semantic_hash": "8bc66f019441a1fd564c9ef9e82e2b75"
+  },
+  "Tutorials/TutorialTwo/scripts/version1/SatisfyMatrix.groovy": {
+    "mtime": 1777562089.5637057,
+    "ast_hash": "f0c09f226bc309f1808f652ab4bf575c",
+    "semantic_hash": "f0c09f226bc309f1808f652ab4bf575c"
+  },
+  "Tutorials/TutorialTwo/scripts/version2/SatisfyMatrix.groovy": {
+    "mtime": 1777672388.145571,
+    "ast_hash": "9302c955493ec28d74502a4f69bf2ef4",
+    "semantic_hash": "9302c955493ec28d74502a4f69bf2ef4"
+  },
+  "Tutorials/TutorialTwo/scripts/version3/SatisfyMatrix.groovy": {
+    "mtime": 1777845927.8367846,
+    "ast_hash": "8966f80c7fdc60f6f02004e1f6fec85e",
+    "semantic_hash": "8966f80c7fdc60f6f02004e1f6fec85e"
+  },
+  "Tutorials/TutorialTwo/scripts/version4/SatisfyMatrix.groovy": {
+    "mtime": 1778685855.4008288,
+    "ast_hash": "e78e3fdd3fbf8a7e98a1c5aa97c5a8db",
+    "semantic_hash": "e78e3fdd3fbf8a7e98a1c5aa97c5a8db"
+  },
+  "Tutorials/TutorialTwo/scripts/version5/SatisfyMatrix.groovy": {
+    "mtime": 1779144305.654101,
+    "ast_hash": "05e8e59faaec4d5def6ac9ef1dfd0262",
+    "semantic_hash": "05e8e59faaec4d5def6ac9ef1dfd0262"
+  },
+  "advancedExamples/aircraftRange/version1/mission_calc.py": {
+    "mtime": 1782489519.6791139,
+    "ast_hash": "b8996c2d1a8ba03354e16ee822425472",
+    "semantic_hash": "b8996c2d1a8ba03354e16ee822425472"
+  },
+  "advancedExamples/aircraftRange/version1/reference_calc.py": {
+    "mtime": 1782319602.6750824,
+    "ast_hash": "682b83b293770f09ffadc6a1d906efec",
+    "semantic_hash": "682b83b293770f09ffadc6a1d906efec"
+  },
+  "advancedExamples/aircraftRange/version1/trade_study_calc.py": {
+    "mtime": 1782327578.9766543,
+    "ast_hash": "37cbfcbf5bccad864e7653af77106f10",
+    "semantic_hash": "37cbfcbf5bccad864e7653af77106f10"
+  },
+  "body.json": {
+    "mtime": 1777562089.5652227,
+    "ast_hash": "7e9d8d6e6973eb7dbe07b4985bc63108",
+    "semantic_hash": "7e9d8d6e6973eb7dbe07b4985bc63108"
+  },
+  "install.sh": {
+    "mtime": 1777921583.8898005,
+    "ast_hash": "71f78438e750bd51af4710007612c214",
+    "semantic_hash": "71f78438e750bd51af4710007612c214"
+  },
+  "scripts/RequirementSatisfyMatrixGraphics.groovy": {
+    "mtime": 1775661912.1230204,
+    "ast_hash": "41189c02afdff2e222c3f646faf45d5d",
+    "semantic_hash": "41189c02afdff2e222c3f646faf45d5d"
+  },
+  "scripts/SysMLv1BlockBuilder.groovy": {
+    "mtime": 1776869308.6517582,
+    "ast_hash": "8cad9b3bc2cbe70859970c31aefad89b",
+    "semantic_hash": "8cad9b3bc2cbe70859970c31aefad89b"
+  },
+  "scripts/SysMLv2Count.groovy": {
+    "mtime": 1777562089.2133896,
+    "ast_hash": "1bda462dd4308b535b00f6e42d7233d2",
+    "semantic_hash": "1bda462dd4308b535b00f6e42d7233d2"
+  },
+  "scripts/SysMLv2Logger.groovy": {
+    "mtime": 1776812186.1542985,
+    "ast_hash": "6d3dfaaf35c9481ff2bd793b3acfa3d0",
+    "semantic_hash": "6d3dfaaf35c9481ff2bd793b3acfa3d0"
+  },
+  "scripts/conceptmodeler/CCMDiagramNavTest.groovy": {
+    "mtime": 1782319651.411028,
+    "ast_hash": "bf0384e84462feab6d974eb206d0cb33",
+    "semantic_hash": "bf0384e84462feab6d974eb206d0cb33"
+  },
+  "scripts/conceptmodeler/CCMNavTest.groovy": {
+    "mtime": 1782275676.6213505,
+    "ast_hash": "0deb9d0887d1b82584f99201cc90e011",
+    "semantic_hash": "0deb9d0887d1b82584f99201cc90e011"
+  },
+  "scripts/conceptmodeler/CCMOntologyLocatorProbe.groovy": {
+    "mtime": 1782602348.3716607,
+    "ast_hash": "729f79daf9b7454f2d56e7fac678bd16",
+    "semantic_hash": "729f79daf9b7454f2d56e7fac678bd16"
+  },
+  "scripts/conceptmodeler/CCMPluginLoadedTest.groovy": {
+    "mtime": 1782270372.1065586,
+    "ast_hash": "8ca01098db75329e9fe0ec016f1ec8aa",
+    "semantic_hash": "8ca01098db75329e9fe0ec016f1ec8aa"
+  },
+  "scripts/conceptmodeler/CCMPluginTest.groovy": {
+    "mtime": 1782270148.6843095,
+    "ast_hash": "95d6d3950a47cf1f5463967815937788",
+    "semantic_hash": "95d6d3950a47cf1f5463967815937788"
+  },
+  "scripts/conceptmodeler/CCMToEnglishProbe.groovy": {
+    "mtime": 1782246867.0576813,
+    "ast_hash": "dd21d31e61cd7bd18df9b2313b6301a9",
+    "semantic_hash": "dd21d31e61cd7bd18df9b2313b6301a9"
+  },
+  "scripts/conceptmodeler/CCMWindowTest.groovy": {
+    "mtime": 1782273249.0165205,
+    "ast_hash": "114b7b3d0d309e428df8d0fa57078881",
+    "semantic_hash": "114b7b3d0d309e428df8d0fa57078881"
+  },
+  "scripts/uaf-ontology/UAFOntologyProbe.groovy": {
+    "mtime": 1782318528.6190307,
+    "ast_hash": "4ff8e52e4d03336bd01f702330e6f4e7",
+    "semantic_hash": "4ff8e52e4d03336bd01f702330e6f4e7"
+  },
+  "scripts/uaf-ontology/tools/syntaxcheck.groovy": {
+    "mtime": 1782318624.9490032,
+    "ast_hash": "56c9cccdcba3bdde9ef0d8e9ab958574",
+    "semantic_hash": "56c9cccdcba3bdde9ef0d8e9ab958574"
+  },
+  "scripts/v2Matrix/LibraryDetector.groovy": {
+    "mtime": 1776891190.9590838,
+    "ast_hash": "189ab5d9339ddf983a31ce6532bd8c09",
+    "semantic_hash": "189ab5d9339ddf983a31ce6532bd8c09"
+  },
+  "scripts/v2Matrix/MatrixCanvas.groovy": {
+    "mtime": 1776963578.3707218,
+    "ast_hash": "dd6312c503c2602f75a029beb96c7007",
+    "semantic_hash": "dd6312c503c2602f75a029beb96c7007"
+  },
+  "scripts/v2Matrix/MatrixController.groovy": {
+    "mtime": 1777045763.5782743,
+    "ast_hash": "6ce8206984fc795aac00277897c0ec2b",
+    "semantic_hash": "6ce8206984fc795aac00277897c0ec2b"
+  },
+  "scripts/v2Matrix/MatrixDialog.groovy": {
+    "mtime": 1777046306.9119399,
+    "ast_hash": "6b80b944fb7509862da6a14059ac0152",
+    "semantic_hash": "6b80b944fb7509862da6a14059ac0152"
+  },
+  "scripts/v2Matrix/MatrixExporter.groovy": {
+    "mtime": 1777046123.389724,
+    "ast_hash": "242d9c3dc1bbb686f4bc0c6ed28e22d3",
+    "semantic_hash": "242d9c3dc1bbb686f4bc0c6ed28e22d3"
+  },
+  "scripts/v2Matrix/MatrixModel.groovy": {
+    "mtime": 1776962887.4208925,
+    "ast_hash": "5450f0c5d541c336a89a5c2a9b9831e1",
+    "semantic_hash": "5450f0c5d541c336a89a5c2a9b9831e1"
+  },
+  "scripts/v2Matrix/MatrixViewPersistence.groovy": {
+    "mtime": 1777046242.9703288,
+    "ast_hash": "647e3ffa3dae898175945f880d5d84e7",
+    "semantic_hash": "647e3ffa3dae898175945f880d5d84e7"
+  },
+  "scripts/v2Matrix/cleanup-fixture.groovy": {
+    "mtime": 1776962772.022213,
+    "ast_hash": "d8ad49162c439627c3d0867448201199",
+    "semantic_hash": "d8ad49162c439627c3d0867448201199"
+  },
+  "scripts/v2Matrix/inspect-fixture.groovy": {
+    "mtime": 1776959215.4344869,
+    "ast_hash": "27053ecdba66a231ed8adf9e83bf10cc",
+    "semantic_hash": "27053ecdba66a231ed8adf9e83bf10cc"
+  },
+  "scripts/v2Matrix/test-matrix-model.groovy": {
+    "mtime": 1776961512.3539662,
+    "ast_hash": "4b8b21b50d4ab321819702d7c45faa31",
+    "semantic_hash": "4b8b21b50d4ab321819702d7c45faa31"
+  },
+  "test harness/SysMLv2Logger.groovy": {
+    "mtime": 1778714014.0659943,
+    "ast_hash": "6de20cbb2f60d98a620fbc4d2eb5eeb8",
+    "semantic_hash": "6de20cbb2f60d98a620fbc4d2eb5eeb8"
+  },
+  "test harness/bin/harness.sh": {
+    "mtime": 1776900652.5561295,
+    "ast_hash": "8484c62bc966c394948572f1662ad37a",
+    "semantic_hash": "8484c62bc966c394948572f1662ad37a"
+  },
+  "test harness/client/harness-client.mjs": {
+    "mtime": 1776899430.726573,
+    "ast_hash": "67b7b08af8f48a6e1ec017b665cebe46",
+    "semantic_hash": "67b7b08af8f48a6e1ec017b665cebe46"
+  },
+  "test harness/start-harness.groovy": {
+    "mtime": 1778714065.9105048,
+    "ast_hash": "452f81bffa66a048be6a677b552fac88",
+    "semantic_hash": "452f81bffa66a048be6a677b552fac88"
+  },
+  "test harness/stop-harness.groovy": {
+    "mtime": 1776899410.828225,
+    "ast_hash": "9d1a86ed1aa7f6e73a5ba17a943c0049",
+    "semantic_hash": "9d1a86ed1aa7f6e73a5ba17a943c0049"
+  }
+}

@@ -10,4 +10,4 @@ coverage/
 *.lock
 public/images/
 **/*.mp4
-**/*.pdf
+**/*.pdf`

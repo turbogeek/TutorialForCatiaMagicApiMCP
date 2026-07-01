@@ -1,0 +1,6 @@
+Project: Untitled1
+All ontology packages found: [Example, UAF Ontology Mapping, Elements, Terms, GRDDL Data Views, RDF Schema, RDF Concepts, XSD, OWL 2 Schema, Concept Modeling Support Library, gufo]
+Chosen package: Imported Ontologies
+Case 1 (Standard): pick=[Example], fellBack=false
+Case 2 (Library-only with UAF as non-library): pick=[UAF Ontology Mapping], fellBack=false
+Case 3 (All-libraries fallback): pick=[Example, UAF Ontology Mapping, Elements, Terms, GRDDL Data Views, RDF Schema, RDF Concepts, XSD, OWL 2 Schema, Concept Modeling Support Library, gufo], fellBack=true
