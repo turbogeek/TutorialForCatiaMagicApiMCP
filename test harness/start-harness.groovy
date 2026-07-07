@@ -395,7 +395,10 @@ class Jzon {
                         pos += 4
                         sb.append((char) Integer.parseInt(hex, 16))
                     }
-                    else sb.append(e)
+                    // Unknown escape (e.g. a raw Windows path's \_ \g \U): PRESERVE the
+                    // backslash instead of dropping it, so an unescaped path mostly survives.
+                    // (Strict JSON would reject \X; this is deliberate leniency - see run().)
+                    else { sb.append((char) 92); sb.append(e) }
                 } else {
                     sb.append(c)
                 }
@@ -497,12 +500,42 @@ class ScriptRunner {
     ScriptRunner(def logger) { this.logger = logger }
     synchronized RunState currentState() { current.get() }
 
+    /**
+     * Resolve a script path robustly. Tries the path as-is, then forward-slash normalized, then
+     * a RECOVERY of a Windows path that was mangled by JSON escape decoding: the decoder turns a
+     * raw path's \t \n \r \b \f into control chars, so we turn those back into their escapes
+     * (\tests survives as TAB+"ests" -> "\tests"); combined with the decoder now preserving
+     * unknown-escape backslashes, an unescaped Windows path fully recovers. Returns null if no
+     * variant exists on disk.
+     */
+    static File resolveScript(String p) {
+        if (p == null || p.isEmpty()) return null
+        File f = new File(p);                       if (f.isFile()) return f
+        f = new File(p.replace('\\', '/'));         if (f.isFile()) return f
+        String rec = p.replace('\t', '\\t').replace('\n', '\\n').replace('\r', '\\r')
+                      .replace('\b', '\\b').replace('\f', '\\f')
+        f = new File(rec);                          if (f.isFile()) return f
+        f = new File(rec.replace('\\', '/'));       if (f.isFile()) return f
+        return null
+    }
+
+    /** Render control chars visibly so a mangled path is obvious in the error message. */
+    static String describeChars(String p) {
+        if (p == null) return 'null'
+        return p.replace('\t', '<TAB>').replace('\n', '<LF>').replace('\r', '<CR>')
+                .replace('\b', '<BS>').replace('\f', '<FF>')
+    }
+
     synchronized RunState run(String scriptPath, List<String> args) {
         stopInternal('replaced by new run')
-        File f = new File(scriptPath)
-        if (!f.exists() || !f.isFile()) {
-            throw new IllegalArgumentException('Script not found: ' + scriptPath)
+        File f = resolveScript(scriptPath)
+        if (f == null) {
+            throw new IllegalArgumentException('Script not found: ' + describeChars(scriptPath)
+                + '. If this is a Windows path, use FORWARD SLASHES in the JSON'
+                + ' (e.g. "E:/dir/x.groovy") or escape backslashes as \\\\ -'
+                + ' a raw backslash is invalid JSON and gets mis-decoded (\\t -> TAB).')
         }
+        scriptPath = f.getPath()   // the resolved, on-disk path
         RunState state = new RunState()
         state.runId = 'run-' + System.currentTimeMillis()
         state.scriptPath = scriptPath
@@ -666,6 +699,7 @@ server.createContext('/run', { HttpExchange ex ->
     try {
         if (ex.requestMethod != 'POST') { Http.sendJson(ex, 405, [error: 'POST only']); return }
         def body = Http.readBody(ex)
+        logger.info('/run body: ' + (body ?: '<empty>'))
         def parsed = body ? Jzon.decode(body) : [:]
         String path = parsed.scriptPath
         if (!path) { Http.sendJson(ex, 400, [error: 'scriptPath required']); return }
